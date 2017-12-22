@@ -175,7 +175,7 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
 function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachment {
     return {
         fallback: "analysis goes here",
-        text: analysis.problems ? analysis.problems.join("\n") : "No problems",
+        text: analysis.problems ? analysis.problems.map(formatProblem).join("\n") : "No problems",
         fields: fields(["author", "personCares", "lintable", "happy", "changed", "pushed"],
             ["status.raw", "error"], analysis),
         footer: ctx.correlationId,
@@ -222,6 +222,10 @@ type Problem = {
     location?: Location,
     recognizedError?: RecognizedError
 };
+
+function formatProblem(problem: Problem): string {
+    return problem.recognizedError ? slack.bold(problem.recognizedError.name) + "" : problem.text
+}
 
 interface Location {
     readonly path: string;
