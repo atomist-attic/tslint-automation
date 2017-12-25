@@ -14,7 +14,7 @@ const githubCredsFromCloudFoundry = appEnv.getServiceCreds("github-token");
 let token = process.env.GITHUB_TOKEN;
 if (githubCredsFromCloudFoundry) {
     logger.info("Using github token from Cloud Foundry environment");
-    token = githubCredsFromCloudFoundry.github.token;
+    token = githubCredsFromCloudFoundry.token;
 }
 
 const teamIds = process.env.TEAM_ID;
