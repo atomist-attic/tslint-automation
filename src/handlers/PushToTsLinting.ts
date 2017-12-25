@@ -4,6 +4,7 @@ import { EventHandler, Secret } from "@atomist/automation-client/decorators";
 import * as GraphQL from "@atomist/automation-client/graph/graphQL";
 import { logger } from "@atomist/automation-client/internal/util/logger";
 import { GitHubRepoRef } from "@atomist/automation-client/operations/common/GitHubRepoRef";
+import { SourceLocation } from "@atomist/automation-client/operations/common/SourceLocation";
 import { GitCommandGitProject } from "@atomist/automation-client/project/git/GitCommandGitProject";
 import { GitProject } from "@atomist/automation-client/project/git/GitProject";
 import { GitStatus } from "@atomist/automation-client/project/git/gitStatus";
@@ -14,7 +15,6 @@ import * as stringify from "json-stringify-safe";
 import * as _ from "lodash";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
-import { SourceLocation } from "@atomist/automation-client/operations/common/SourceLocation";
 import { getFileContent } from "../util/getFileContent";
 
 const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
@@ -160,7 +160,8 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
                 .then(attachments =>
                     ctx.messageClient.addressUsers({
                             text:
-                                `Bad news: there are some tricky linting errors on ${linkToCommit(push, "your commit")} to ${push.repo.name}#${push.branch}.`,
+                                `Bad news: there are some tricky linting errors on ${
+                                    linkToCommit(push, "your commit")} to ${push.repo.name}#${push.branch}.`,
                             attachments,
                         },
                         analysis.author))
@@ -170,7 +171,6 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
         return reportToMe("I did nothing");
     }
 }
-
 
 function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachment {
     return {
@@ -217,14 +217,14 @@ function linkToLine(push: graphql.PushToTsLinting.Push, location: Location) {
         location.description);
 }
 
-type Problem = {
-    text: string,
-    location?: Location,
-    recognizedError?: RecognizedError
-};
+interface Problem {
+    text: string;
+    location?: Location;
+    recognizedError?: RecognizedError;
+}
 
 function formatProblem(problem: Problem): string {
-    return problem.recognizedError ? slack.bold(problem.recognizedError.name) + "" : problem.text
+    return problem.recognizedError ? slack.bold(problem.recognizedError.name) + "" : problem.text;
 }
 
 interface Location {
@@ -292,26 +292,28 @@ function problemToAttachment(token: string, push: graphql.PushToTsLinting.Push, 
 function getLine(content: string, lineFrom1: number) {
     const lines = content.split("\n");
     if (lines.length < lineFrom1) {
-        return `## oops, there are only ${lines.length} lines. Unable to retrieve line ${lineFrom1}`
+        return `## oops, there are only ${lines.length} lines. Unable to retrieve line ${lineFrom1}`;
     }
     return lines[lineFrom1 - 1];
 }
 
 class RecognizedError {
-    public color: string;
-    public usefulToShowLine: boolean;
 
     private static defaultOptions = {
         color: "#888888",
         usefulToShowLine: false,
     };
 
+    public color: string;
+    public usefulToShowLine: boolean;
+
+
     constructor(public name: string,
                 public description: string,
                 opts?: { color?: string, usefulToShowLine?: boolean }) {
         const fullOpts = {
             ...RecognizedError.defaultOptions,
-            ...opts
+            ...opts,
         };
         this.color = fullOpts.color;
         this.usefulToShowLine = fullOpts.usefulToShowLine;
@@ -324,14 +326,14 @@ class CommentFormatError extends RecognizedError {
 
     public static recognize(name: string, description: string): CommentFormatError | null {
         if (name === this.Name) {
-            return new CommentFormatError(description)
+            return new CommentFormatError(description);
         }
         return null;
     }
 
     constructor(description: string) {
         super(CommentFormatError.Name, description,
-            { color: "#d84010", usefulToShowLine: true })
+            { color: "#d84010", usefulToShowLine: true });
     }
 }
 
@@ -348,7 +350,6 @@ function recognizeError(tsError: string): RecognizedError {
 
     return CommentFormatError.recognize(name, description) || new RecognizedError(name, description);
 }
-
 
 function findComplaints(push: graphql.PushToTsLinting.Push, tslintOutput: string): Problem[] {
     if (!tslintOutput) {

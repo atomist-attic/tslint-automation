@@ -1,10 +1,10 @@
+import { logger } from "@atomist/automation-client";
 import { Configuration } from "@atomist/automation-client/configuration";
 import * as appRoot from "app-root-path";
-import { HelloWorld } from "./handlers/HelloWorld";
-import { PushToTsLinting } from "./handlers/PushToTsLinting";
 import * as cfenv from "cfenv";
 import * as _ from "lodash";
-import { logger } from "@atomist/automation-client";
+import { HelloWorld } from "./handlers/HelloWorld";
+import { PushToTsLinting } from "./handlers/PushToTsLinting";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);

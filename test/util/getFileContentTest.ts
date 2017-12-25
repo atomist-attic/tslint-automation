@@ -9,9 +9,9 @@ describe("getting the file content", () => {
 
         getFileContent(MyGithubToken, { name: "carrot", owner: "satellite-of-love", ref: "master"}, "README.md")
             .then(line => {
-                console.log("Woo: " + line)
+                console.log("Woo: " + line);
             })
             .then(() => done(), done);
-    })
+    });
 
-})
+});
