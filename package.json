@@ -8,7 +8,8 @@
     "@types/winston": "^2.3.7",
     "cfenv": "^1.0.4",
     "child-process-promise": "^2.2.1",
-    "github": "^13.0.1"
+    "github": "^13.0.1",
+    "tslint": "^5.8.0"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.44",
@@ -22,7 +23,6 @@
     "power-assert": "^1.4.4",
     "supervisor": "^0.12.0",
     "ts-node": "^3.3.0",
-    "tslint": "^5.8.0",
     "typescript": "2.5.2",
     "typescript-formatter": "^6.1.0"
   },

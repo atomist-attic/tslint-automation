@@ -29,18 +29,11 @@ function main () {
         esac
     done
 
-    msg "running install"
-
-    local install_status
-
-    npm install
-    install_status=$?
-    if [[ ! $install_status -eq 0 ]]; then
-        err "npm install errored"
-        return 1
-    fi
-
     msg "running lint"
+
+echo "npm bin is: $(npm bin)"
+echo "it contains: "
+ls $(npm bin)
 
     local lint_status
     $(npm bin)/tslint --fix '**/*.ts' --exclude 'node_modules/**' --exclude 'build/**' -t verbose
