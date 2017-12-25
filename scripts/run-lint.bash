@@ -32,6 +32,8 @@ function main () {
     msg "running lint"
 
     pwd
+    echo "which"
+    which tslint
 
     local lint_status
     tslint --fix '**/*.ts' --exclude 'node_modules/**' --exclude 'build/**' -t verbose

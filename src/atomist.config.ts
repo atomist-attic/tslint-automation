@@ -18,13 +18,15 @@ if (githubCredsFromCloudFoundry) {
 }
 
 execufy("pwd", "failure")
-    .then(cwd => logger.info("Running in: " + cwd));
+    .then(cwd => logger.info("Running in: " + cwd))
+    .then(() => execufy("ls", "no-ls-for-you"))
+    .then(output =>
+        logger.info("It contains: " + output));
 
-let gitInfo = { sha: "unknown", branch: "unknown", repository: "unknown"};
+let gitInfo = { sha: "unknown", branch: "unknown", repository: "unknown" };
 try {
-    gitInfo = require ("./git-info.json")
-} catch (e)
-{
+    gitInfo = require("./git-info.json")
+} catch (e) {
     logger.warn("Did not locate git-info.json");
 }
 
