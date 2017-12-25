@@ -2,11 +2,17 @@ import { Configuration } from "@atomist/automation-client/configuration";
 import * as appRoot from "app-root-path";
 import { HelloWorld } from "./handlers/HelloWorld";
 import { PushToTsLinting } from "./handlers/PushToTsLinting";
+import * as cfenv from "cfenv";
+import * as _ from "lodash";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
 
-const token = process.env.GITHUB_TOKEN;
+const appEnv = cfenv.getAppEnv();
+
+const token = _.get(appEnv.getServiceCreds("github-token"),
+    "github.token",
+    process.env.GITHUB_TOKEN);
 const teamIds = process.env.TEAM_ID;
 
 export const configuration: Configuration = {
