@@ -4,15 +4,19 @@ import { HelloWorld } from "./handlers/HelloWorld";
 import { PushToTsLinting } from "./handlers/PushToTsLinting";
 import * as cfenv from "cfenv";
 import * as _ from "lodash";
+import { logger } from "@atomist/automation-client";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
 
 const appEnv = cfenv.getAppEnv();
+const githubCredsFromCloudFoundry = appEnv.getServiceCreds("github-token");
+let token = process.env.GITHUB_TOKEN;
+if (githubCredsFromCloudFoundry) {
+    logger.info("Using github token from Cloud Foundry environment");
+    token = githubCredsFromCloudFoundry.github.token;
+}
 
-const token = _.get(appEnv.getServiceCreds("github-token"),
-    "github.token",
-    process.env.GITHUB_TOKEN);
 const teamIds = process.env.TEAM_ID;
 
 export const configuration: Configuration = {
