@@ -1,5 +1,5 @@
 import { logger } from "@atomist/automation-client";
-import { configuration } from "../atomist.config";
+import { configuration, gitInfo } from "../atomist.config";
 import { execufy } from "./execufy" ;
 
 
@@ -21,8 +21,6 @@ interface CloudFoundryVcapApplication {
 }
 
 function describeCloudFoundry(): Promise<string> {
-
-    const gitInfo = require("./git-info.json");
 
     const vcap: CloudFoundryVcapApplication = JSON.parse(process.env.VCAP_APPLICATION);
     logger.info("VCAP_APPLICATION = " + JSON.stringify(vcap, null, 2));
