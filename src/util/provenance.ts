@@ -1,6 +1,6 @@
-import { configuration } from "../atomist.config";
 import { logger } from "@atomist/automation-client";
 import * as fs from "fs";
+import { configuration } from "../atomist.config";
 
 const childProcess = require("child_process");
 
@@ -33,7 +33,6 @@ interface CloudFoundryVcapApplication {
     instance_id: string;
     start: string;
 }
-
 
 function describeCloudFoundry(): Promise<string> {
 
