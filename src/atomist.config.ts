@@ -17,12 +17,6 @@ if (githubCredsFromCloudFoundry) {
     token = githubCredsFromCloudFoundry.token;
 }
 
-execufy("pwd", "failure")
-    .then(cwd => logger.info("Running in: " + cwd))
-    .then(() => execufy("ls", "no-ls-for-you"))
-    .then(output =>
-        logger.info("It contains: " + output));
-
 export let gitInfo = { sha: "unknown", branch: "unknown", repository: "unknown" };
 try {
     gitInfo = require("./git-info.json");
