@@ -183,40 +183,6 @@ function docker-push () {
     fi
 }
 
-# push app to Cloud Foundry
-# usage: cf-push APP [SPACE]
-function cf-push () {
-    local app=$1
-    if [[ ! $app ]]; then
-        err "cf-push: missing required argument: APPLICATION"
-        return 10
-    fi
-    shift
-    local space=$1
-    if [[ ! $space ]]; then
-        space=production
-    fi
-
-    if [[ ! $CF_ORG ]]; then
-        msg "no Cloud Foundry org set"
-        msg "skipping Cloud Foundry push"
-        return 0
-    fi
-
-    local api_url=${CF_API:-https://api.run.pivotal.io}
-
-    if ! cf login -a "$api_url" -u "$CF_USER" -p "$CF_PASSWORD" -o "$CF_ORG" -s "$space"
-    then
-        err "failed to log in to Cloud Foundry at '$api_url'"
-        return 1
-    fi
-
-    if ! cf push "$app"; then
-        err "failed to push '$app' to Cloud Foundry"
-        return 1
-    fi
-}
-
 # usage: main "$@"
 function main () {
     local arg ignore_lint
@@ -260,51 +226,6 @@ function main () {
     else
         err "tslint errored"
         return 1
-    fi
-
-    [[ $TRAVIS_PULL_REQUEST == false ]] || return 0
-
-    local app=${TRAVIS_REPO_SLUG##*/}
-    if [[ $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(m|rc)\.[0-9]+)?$ ]]; then
-        msg "pushing app to Cloud Foundry"
-        if ! cf-push "$app"; then
-            err "failed to push '$app' to Cloud Foundry"
-            return 1
-        fi
-        if ! git-tag "$TRAVIS_TAG+travis.$TRAVIS_BUILD_NUMBER"; then
-            return 1
-        fi
-    else
-        if ! set-timestamp-version "$TRAVIS_BRANCH"; then
-            err "failed to set timestamp version"
-            return 1
-        fi
-        local prerelease_version pkg_json=package.json
-        prerelease_version=$(jq -er .version "$pkg_json")
-        if [[ $? -ne 0 || ! $prerelease_version ]]; then
-            err "failed to parse version from $pkg_json: $prerelease_version"
-            return 1
-        fi
-        if [[ $TRAVIS_BRANCH == master ]]; then
-            msg "building and pushing Docker image"
-            if ! docker-push "$app" "$prerelease_version"; then
-                err "failed to build and push docker image"
-                return 1
-            fi
-            local staging_app=$app-staging
-            msg "pushing staging app to Cloud Foundry development space"
-            if ! cf-push "$staging_app" development; then
-                err "failed to push '$staging_app' to Cloud Foundry"
-                return 1
-            fi
-            if ! git-tag "$prerelease_version" "$prerelease_version+travis.$TRAVIS_BUILD_NUMBER"; then
-                return 1
-            fi
-        else
-            if ! git-tag "$prerelease_version+travis.$TRAVIS_BUILD_NUMBER"; then
-                return 1
-            fi
-        fi
     fi
 }
 
