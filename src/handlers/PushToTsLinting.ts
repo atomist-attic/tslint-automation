@@ -307,7 +307,6 @@ class RecognizedError {
     public color: string;
     public usefulToShowLine: boolean;
 
-
     constructor(public name: string,
                 public description: string,
                 opts?: { color?: string, usefulToShowLine?: boolean }) {
