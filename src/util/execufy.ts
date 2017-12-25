@@ -1,6 +1,6 @@
 const childProcess = require("child_process");
 
-function execufy(cmd: string, errorResult: string): Promise<string> {
+export function execufy(cmd: string, errorResult: string): Promise<string> {
     return new Promise((resolve, reject) => {
         childProcess.exec(cmd, (error, stdout: string, stderr: string) => {
             if (error) {

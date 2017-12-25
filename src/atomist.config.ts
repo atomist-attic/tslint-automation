@@ -4,6 +4,7 @@ import * as appRoot from "app-root-path";
 import * as cfenv from "cfenv";
 import { HelloWorld } from "./handlers/HelloWorld";
 import { PushToTsLinting } from "./handlers/PushToTsLinting";
+import { execufy } from "./util/execufy";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);

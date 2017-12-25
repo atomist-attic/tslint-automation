@@ -31,12 +31,10 @@ function main () {
 
     msg "running lint"
 
-echo "npm bin is: $(npm bin)"
-echo "it contains: "
-ls $(npm bin)
+    pwd
 
     local lint_status
-    $(npm bin)/tslint --fix '**/*.ts' --exclude 'node_modules/**' --exclude 'build/**' -t verbose
+    tslint --fix '**/*.ts' --exclude 'node_modules/**' --exclude 'build/**' -t verbose
     lint_status=$?
 
     if [[ $lint_status -eq 0 ]]; then

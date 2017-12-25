@@ -1,5 +1,6 @@
 import { logger } from "@atomist/automation-client";
 import { configuration } from "../atomist.config";
+import { execufy } from "./execufy" ;
 
 
 function describeLocal(): Promise<string> {
