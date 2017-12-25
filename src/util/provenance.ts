@@ -2,7 +2,6 @@ import { logger } from "@atomist/automation-client";
 import { configuration, gitInfo } from "../atomist.config";
 import { execufy } from "./execufy" ;
 
-
 function describeLocal(): Promise<string> {
     return Promise.all(
         [execufy("git rev-parse HEAD", "(no sha)"),

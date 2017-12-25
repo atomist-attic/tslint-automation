@@ -10,10 +10,10 @@ import * as slack from "@atomist/slack-messages/SlackMessages";
 import { exec } from "child-process-promise";
 import * as stringify from "json-stringify-safe";
 import * as _ from "lodash";
+import { Options, run, Status } from "tslint/lib/runner";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
 import { getFileContent } from "../util/getFileContent";
-import { Options, run, Status } from "tslint/lib/runner"
 
 const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 const me = ["jessica", "jessitron"];
@@ -93,7 +93,7 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
                         if (lintStatus.success) {
                             return { ...soFar, happy: true };
                         } else {
-                            return { ...soFar, happy: false, problems: findComplaints(push, lintStatus.errorOutput) }
+                            return { ...soFar, happy: false, problems: findComplaints(push, lintStatus.errorOutput) };
                         }
                     });
             } else {
@@ -369,13 +369,13 @@ function findComplaints(push: graphql.PushToTsLinting.Push, tslintOutput: string
 
 export function runTslint(baseDir) {
     const options: Options = {
-        exclude: ['node_modules/**', 'build/**'],
+        exclude: ["node_modules/**", "build/**"],
         fix: true,
-        project: baseDir
-    }
-    let errors: string[] = []
-    let logs: string[] = []
-    const logger = {
+        project: baseDir,
+    };
+    const errors: string[] = [];
+    const logs: string[] = [];
+    const loggo = {
         log(str) {
             console.log("Log: " + str);
             logs.push(str);
@@ -385,8 +385,8 @@ export function runTslint(baseDir) {
             errors.push(str);
         },
     };
-    return run(options, logger).then(status => {
+    return run(options, loggo).then(status => {
         console.log("returned from run");
-        return { success: status === Status.Ok, errorOutput: logs.join("\n") }
+        return { success: status === Status.Ok, errorOutput: logs.join("\n") };
     });
 }

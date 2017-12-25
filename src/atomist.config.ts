@@ -25,7 +25,7 @@ execufy("pwd", "failure")
 
 export let gitInfo = { sha: "unknown", branch: "unknown", repository: "unknown" };
 try {
-    gitInfo = require("./git-info.json")
+    gitInfo = require("./git-info.json");
 } catch (e) {
     logger.warn("Did not locate git-info.json");
 }
