@@ -1,21 +1,6 @@
 import { logger } from "@atomist/automation-client";
-import * as fs from "fs";
 import { configuration } from "../atomist.config";
 
-const childProcess = require("child_process");
-
-function execufy(cmd: string, errorResult: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        childProcess.exec(cmd, (error, stdout: string, stderr: string) => {
-            if (error) {
-                console.log(`stderr from ${cmd}: ${stderr}`);
-                resolve(errorResult);
-            } else {
-                resolve(stdout);
-            }
-        });
-    });
-}
 
 function describeLocal(): Promise<string> {
     return Promise.all(
