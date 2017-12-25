@@ -1,21 +1,19 @@
-import { EventFired, HandleEvent, HandlerContext, HandlerResult, Secrets, success } from "@atomist/automation-client";
-import { runCommand } from "@atomist/automation-client/action/cli/commandLine";
+import { EventFired, HandleEvent, HandlerContext, HandlerResult, Secrets } from "@atomist/automation-client";
 import { EventHandler, Secret } from "@atomist/automation-client/decorators";
 import * as GraphQL from "@atomist/automation-client/graph/graphQL";
 import { logger } from "@atomist/automation-client/internal/util/logger";
 import { GitHubRepoRef } from "@atomist/automation-client/operations/common/GitHubRepoRef";
-import { SourceLocation } from "@atomist/automation-client/operations/common/SourceLocation";
 import { GitCommandGitProject } from "@atomist/automation-client/project/git/GitCommandGitProject";
 import { GitProject } from "@atomist/automation-client/project/git/GitProject";
 import { GitStatus } from "@atomist/automation-client/project/git/gitStatus";
 import * as slack from "@atomist/slack-messages/SlackMessages";
-import * as appRoot from "app-root-path";
 import { exec } from "child-process-promise";
 import * as stringify from "json-stringify-safe";
 import * as _ from "lodash";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
 import { getFileContent } from "../util/getFileContent";
+import { Options, run, Status } from "tslint/lib/runner"
 
 const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 const me = ["jessica", "jessitron"];
@@ -90,9 +88,14 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
         });
         const soLintIt: Promise<Partial<Analysis>> = isItLintable.then(soFar => {
             if (soFar.lintable) {
-                return runCommand(`bash ${appRoot}/scripts/run-lint.bash`, { cwd: soFar.project.baseDir })
-                    .then(result => ({ ...soFar, happy: true }),
-                        error => ({ ...soFar, happy: false, error, problems: findComplaints(push, error.stdout) }));
+                return runTslint(soFar.project.baseDir)
+                    .then(lintStatus => {
+                        if (lintStatus.success) {
+                            return { ...soFar, happy: true };
+                        } else {
+                            return { ...soFar, happy: false, problems: findComplaints(push, lintStatus.errorOutput) }
+                        }
+                    });
             } else {
                 return Promise.resolve(soFar);
             }
@@ -362,4 +365,28 @@ function findComplaints(push: graphql.PushToTsLinting.Push, tslintOutput: string
             location: locate(p),
             recognizedError: recognizeError(p),
         }));
+}
+
+export function runTslint(baseDir) {
+    const options: Options = {
+        exclude: ['node_modules/**', 'build/**'],
+        fix: true,
+        project: baseDir
+    }
+    let errors: string[] = []
+    let logs: string[] = []
+    const logger = {
+        log(str) {
+            console.log("Log: " + str);
+            logs.push(str);
+        },
+        error(str) {
+            console.log("err: " + str);
+            errors.push(str);
+        },
+    };
+    return run(options, logger).then(status => {
+        console.log("returned from run");
+        return { success: status === Status.Ok, errorOutput: logs.join("\n") }
+    });
 }
