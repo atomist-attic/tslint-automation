@@ -10,8 +10,9 @@ branches:
 env:
   global:
   - NPM_REGISTRY=https://atomist.jfrog.io/atomist/api/npm/npm-dev-local
+  - secure: IhdbuzDS0zFqnUtm1k6syywINH2kai4L2hZTFxPeGBOlju58I1LBM+FVQkPaG9DRYoC5L6KgYT4vJRn+vDWvHq6t22gSRTJSRUY81mOgV1CCGLhIMF2WqixGGuEE/sbujMG8I0G8GC+7BctTY7NJOMghIYUAq9/uSnbdLFW3/FHdYjvt3cd5/FHXUnOSnp6fSB/LZVl0wI9DTqXSw91eNnFi+nYwC1UZ5Uu07u6eVxUrIM6rp57cztgfA9sV1i79Ourq5z3wJ7dzuRbzPkRFV0PcRk13aGqQuL5vIdYOJ2D07WC2LYwRvepSxruIzSfMTx2kA4O/OKS9NKrT7p5HQ8xQmHXhESlQBMnMbn/MNvrWqq370g7EQtO3uEoZjvE5yldU/zs45gGbHkUXZK2NoUHziXHAjmvUbJjrJQPKCertavdDGQO8lHFZxnxiwi9ExJrPWB1DJL1eSOwEXKYDvnjzW2q80KhEI7gIO+vCsO2g1+LU4X8mn/b/z7RhUhSDsyTOcyNQ02H/IvuVEJMbrnd9G2Y0lWpnSuMYu9ePg9qyWNrVUK98zjvEW13WaUsT2U8VhQlwseDZoQJBdj7DVbKUC4Sjri1TODO2aDIWvYzf/ufibPC/gjDgN+PFjN8B+mA4ClZgwcecV8MkHebEyfT8esf962d7HR71b2ExB+4=
 before_install:
-- "rm -f $HOME/.npm/_logs/*-debug.log"
+- rm -f $HOME/.npm/_logs/*-debug.log
 - openssl aes-256-cbc -K $encrypted_5a461dbd19e8_key -iv $encrypted_5a461dbd19e8_iv
   -in scripts/.npmrc.enc -out $HOME/.npmrc -d
 script: bash scripts/travis-build.bash
