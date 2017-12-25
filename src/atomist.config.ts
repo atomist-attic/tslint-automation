@@ -2,7 +2,6 @@ import { logger } from "@atomist/automation-client";
 import { Configuration } from "@atomist/automation-client/configuration";
 import * as appRoot from "app-root-path";
 import * as cfenv from "cfenv";
-import * as _ from "lodash";
 import { HelloWorld } from "./handlers/HelloWorld";
 import { PushToTsLinting } from "./handlers/PushToTsLinting";
 
@@ -17,7 +16,7 @@ if (githubCredsFromCloudFoundry) {
     token = githubCredsFromCloudFoundry.token;
 }
 
-const teamIds = process.env.TEAM_ID;
+const teamIds = ["T29E48P34"];
 
 export const configuration: Configuration = {
     name: pj.name,
