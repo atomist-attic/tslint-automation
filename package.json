@@ -23,6 +23,7 @@
     "power-assert": "^1.4.4",
     "supervisor": "^0.12.0",
     "ts-node": "^3.3.0",
+    "copyfiles": "^1.2.0",
     "typescript": "2.5.2",
     "typescript-formatter": "^6.1.0"
   },
@@ -30,7 +31,8 @@
     "test": "test"
   },
   "scripts": {
-    "gql:gen": "gql-gen --file node_modules/@atomist/automation-client/graph/schema.cortex.json --template typescript -m --out ./src/typings/ \"./graphql/**/*.graphql\"",
+    "gql:copy": "copyfiles 'src/**/*.graphql' build",
+    "gql:gen": "gql-gen --file node_modules/@atomist/automation-client/graph/schema.cortex.json --template typescript --no-schema --out src/typings 'graphql/**/*.graphql'",
     "autotest": "supervisor -q -n exit -e ts -x npm -- run test",
     "clean": "rm -f *-v8.log; rm -f profile.txt; rm -rf build; rm -rf target",
     "compile": "npm-run-all git:info compile:gql compile:ts",
@@ -38,7 +40,6 @@
     "compile:ts": "tsc --project .",
     "fmt": "tsfmt --replace",
     "git:info": "atomist git",
-    "fmt": "tsfmt --replace",
     "lint": "tslint '**/*.ts' --exclude 'node_modules/**' --exclude 'build/**' -t verbose",
     "lint-fix": "tslint --fix '**/*.ts' --exclude 'node_modules/**' --exclude 'build/**' -t verbose",
     "testone": "mocha --compilers ts:espower-typescript/guess \"test/**/${TEST:-*.ts}\"",
