@@ -5,9 +5,7 @@ import { whereAmIRunning } from "../util/provenance";
 @CommandHandler("Reveal the running version", "hello linting-automation")
 export class HelloWorld implements HandleCommand {
 
-
     public handle(context: HandlerContext) {
-
 
         return whereAmIRunning().then(provenance =>
             context.messageClient.respond(
