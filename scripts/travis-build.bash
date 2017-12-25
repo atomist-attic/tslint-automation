@@ -262,12 +262,6 @@ function main () {
         return 1
     fi
 
-    msg "running typedoc"
-    if ! npm run typedoc; then
-        err "failed to generate TypeDoc"
-        return 1
-    fi
-
     [[ $TRAVIS_PULL_REQUEST == false ]] || return 0
 
     local app=${TRAVIS_REPO_SLUG##*/}
