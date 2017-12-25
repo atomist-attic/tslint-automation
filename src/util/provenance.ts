@@ -1,4 +1,6 @@
 import { configuration } from "../atomist.config";
+import { logger } from "@atomist/automation-client";
+import * as fs from "fs";
 
 const childProcess = require("child_process");
 
@@ -32,11 +34,17 @@ interface CloudFoundryVcapApplication {
     start: string;
 }
 
+
 function describeCloudFoundry(): Promise<string> {
+
+    const gitInfo = require("./git-info.json");
+
     const vcap: CloudFoundryVcapApplication = JSON.parse(process.env.VCAP_APPLICATION);
+    logger.info("VCAP_APPLICATION = " + JSON.stringify(vcap, null, 2));
     return Promise.resolve(
         `from: ${configuration.name}:${configuration.version} running in space ${
-            vcap.space_id}, instance ${vcap.instance_id}, started on ${vcap.start}`);
+            vcap.space_id}, instance ${vcap.instance_id}
+            Git SHA: ${gitInfo.sha}`);
 }
 
 export function whereAmIRunning(): Promise<string> {
