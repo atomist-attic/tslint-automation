@@ -1,9 +1,9 @@
-import * as stringify from "json-stringify-safe";
-import * as assert from "power-assert";
-import "mocha";
-import { runTslint } from "../src/handlers/PushToTsLinting";
-import { GitCommandGitProject } from "@atomist/automation-client/project/git/GitCommandGitProject";
 import { GitHubRepoRef } from "@atomist/automation-client/operations/common/GitHubRepoRef";
+import { GitCommandGitProject } from "@atomist/automation-client/project/git/GitCommandGitProject";
+import * as stringify from "json-stringify-safe";
+import "mocha";
+import * as assert from "power-assert";
+import { runTslint } from "../src/handlers/PushToTsLinting";
 
 const GitHubCredentials = { token: process.env.GITHUB_TOKEN };
 
