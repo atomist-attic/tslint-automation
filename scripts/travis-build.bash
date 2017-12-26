@@ -227,6 +227,11 @@ function main () {
         err "tslint errored"
         return 1
     fi
+
+    if ! docker-push tslint-automation $TRAVIS_BUILD_NUMBER; then
+        err "docker build and push failed"
+        return 1
+    fi
 }
 
 main "$@" || exit 1
