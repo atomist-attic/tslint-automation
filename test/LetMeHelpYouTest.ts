@@ -23,9 +23,26 @@
 import * as _ from "lodash";
 import "mocha";
 import * as assert from "power-assert";
-import { lintingIsWanted, PeopleWhoWantLintingOnTheirBranches } from "../src/handlers/PushToTsLinting";
+import {
+    lintingIsWanted, PeopleWhoDoNotWantMeToOfferToHelp, PeopleWhoWantLintingOnTheirBranches,
+    shouldOfferToHelp,
+} from "../src/handlers/PushToTsLinting";
 
+describe("Before I can even ask, people have to be able to tell me not to offer", () => {
+    it("does not offer to make a commit for an author in the grouchy list", () => {
+        const personOnTheList = _.shuffle(PeopleWhoDoNotWantMeToOfferToHelp).pop();
 
+        assert(!shouldOfferToHelp(personOnTheList))
+    });
+
+    it("does offer for a person not on the list", () => {
+        const personNotOnTheList = possibleAuthors()
+            .filter(a => !PeopleWhoDoNotWantMeToOfferToHelp.includes(a))
+            .pop();
+
+        assert(shouldOfferToHelp(personNotOnTheList))
+    });
+});
 
 
 describe("Modifying the list of users we are allowed to help", () => {
@@ -39,11 +56,9 @@ describe("Modifying the list of users we are allowed to help", () => {
     });
 
     it("makes a commit for a person on the list", () => {
-        const personNotOnTheList = possibleAuthors()
-            .filter(a => PeopleWhoWantLintingOnTheirBranches.includes(a))
-            .pop();
+        const personOnTheList = _.shuffle(PeopleWhoWantLintingOnTheirBranches).pop();
 
-        assert(lintingIsWanted(null, personNotOnTheList))
+        assert(lintingIsWanted(null, personOnTheList))
     });
 
 });

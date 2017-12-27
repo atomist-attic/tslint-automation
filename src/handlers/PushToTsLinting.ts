@@ -16,6 +16,7 @@ import * as graphql from "../typings/types";
 import { getFileContent } from "../util/getFileContent";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
+export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];
 const me = ["jessica", "jessitron"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
@@ -26,14 +27,15 @@ interface Analysis {
     happy?: boolean;
     changed: boolean;
     status?: GitStatus;
-    personCares: boolean;
+    personWantsMyHelp: boolean;
+    offered: boolean;
     pushed: boolean;
     error?: Error;
     problems?: Problem[];
 }
 
 function stringifyAnalysis(a: Analysis): string {
-    return `personCares? ${a.personCares}
+    return `personCares? ${a.personWantsMyHelp}
 lintable? ${a.lintable}
 happy?    ${a.happy}
 changed?  ${a.changed}
@@ -42,7 +44,7 @@ status:   ${stringify(a.status)}
 error: ${a.error}`;
 }
 
-function skipThisCommitEntirely(push: graphql.PushToTsLinting.Push):boolean {
+function skipThisCommitEntirely(push: graphql.PushToTsLinting.Push): boolean {
     if (push.after.message === CommitMessage) {
         // haha, I made this commit
         return true;
@@ -51,7 +53,14 @@ function skipThisCommitEntirely(push: graphql.PushToTsLinting.Push):boolean {
 }
 
 export function lintingIsWanted(params: PushToTsLinting, author: string): boolean {
-    if (!PeopleWhoWantLintingOnTheirBranches.includes(author)) {
+    if (PeopleWhoWantLintingOnTheirBranches.includes(author)) {
+        return true;
+    }
+    return false;
+}
+
+export function shouldOfferToHelp(author: string): boolean {
+    if (PeopleWhoDoNotWantMeToOfferToHelp.includes(author)) {
         return false;
     }
     return true;
@@ -71,7 +80,7 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
         const author: string = _.get(push, "after.author.person.chatId.screenName") ||
             _.get(push, "after.author.login") || "unknown";
 
-        if(skipThisCommitEntirely(push)) {
+        if (skipThisCommitEntirely(push)) {
             return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(push)}`, me)
         }
         const personCares: boolean = lintingIsWanted(params, author);
@@ -80,7 +89,7 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
 
         // end debugging
 
-        const startAnalysis: Partial<Analysis> = { personCares, author };
+        const startAnalysis: Partial<Analysis> = { personWantsMyHelp: personCares, author };
 
         const projectPromise: Promise<GitProject> = GitCommandGitProject.cloned({ token: params.githubToken },
             new GitHubRepoRef(push.repo.owner, push.repo.name, push.branch));
@@ -111,13 +120,19 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
                     return ({ ...soFar, changed: !status.isClean, status });
                 }));
         const letsPushIt: Promise<Analysis> = didItChange.then(soFar => {
-            if (soFar.changed && soFar.personCares && soFar.happy) {
-                return soFar.project.commit(CommitMessage)
-                    .then(() => soFar.project.push())
-                    .then(() => ({ ...soFar, pushed: true } as Analysis))
-                    .catch(error => ({ ...soFar, pushed: false, error } as Analysis));
+            if (soFar.changed && soFar.happy) {
+                if (soFar.personWantsMyHelp) {
+                    return soFar.project.commit(CommitMessage)
+                        .then(() => soFar.project.push())
+                        .then(() => ({ ...soFar, pushed: true, offered: false } as Analysis))
+                        .catch(error => ({ ...soFar, pushed: false, offered: false, error } as Analysis));
+                } else {
+                    if (shouldOfferToHelp(soFar.author)) {
+                        return offerToHelp(ctx).then(() => ({ ...soFar, pushed: false, offered: true } as Analysis));
+                    }
+                }
             } else {
-                return Promise.resolve({ ...soFar, pushed: false } as Analysis);
+                return Promise.resolve({ ...soFar, pushed: false, offered: false } as Analysis);
             }
         });
 
@@ -159,8 +174,11 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
                 analysis.author)
                 .then(() => reportToMe("I told them they should pull"));
         }
-        if (analysis.happy && analysis.changed && !analysis.personCares) {
+        if (analysis.happy && analysis.changed && !analysis.personWantsMyHelp && !analysis.offered) {
             return reportToMe(`I could have fixed it, but didn't because ${analysis.author} didn't want me to`);
+        }
+        if (analysis.offered) {
+            return reportToMe(`I offered to help ${analysis.author}`);
         }
         if (!analysis.pushed && !analysis.happy) {
 
@@ -180,11 +198,16 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
     }
 }
 
+function offerToHelp(context: HandlerContext): Promise<void> {
+    logger.info("I would offer to help if I knew how ...");
+    return Promise.resolve();
+}
+
 function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachment {
     return {
         fallback: "analysis goes here",
         text: analysis.problems ? analysis.problems.map(formatProblem).join("\n") : "No problems",
-        fields: fields(["author", "personCares", "lintable", "happy", "changed", "pushed"],
+        fields: fields(["author", "personWantsMyHelp", "lintable", "happy", "changed", "pushed"],
             ["status.raw", "error"], analysis),
         footer: ctx.correlationId,
     };
