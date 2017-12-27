@@ -7,7 +7,7 @@ import { runTslint } from "../src/handlers/PushToTsLinting";
 
 const GitHubCredentials = { token: process.env.GITHUB_TOKEN };
 
-describe.skip("can we lint the thing?", () => {
+describe("can we lint the thing?", () => {
 
     it("can lint a thing", done => {
         GitCommandGitProject.cloned(GitHubCredentials, new GitHubRepoRef("atomist", "automation-client-ts"))
