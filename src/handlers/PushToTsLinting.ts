@@ -15,7 +15,7 @@ import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
 import { getFileContent } from "../util/getFileContent";
 
-const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
+export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 const me = ["jessica", "jessitron"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
@@ -42,14 +42,16 @@ status:   ${stringify(a.status)}
 error: ${a.error}`;
 }
 
-function lintingIsWanted(push: graphql.PushToTsLinting.Push, author: string): boolean {
-
-    if (!PeopleWhoWantLintingOnTheirBranches.includes(author)) {
-        return false;
-    }
-    // TODO: actually don't even try in this case, this is different
+function skipThisCommitEntirely(push: graphql.PushToTsLinting.Push):boolean {
     if (push.after.message === CommitMessage) {
         // haha, I made this commit
+        return true;
+    }
+    return false;
+}
+
+export function lintingIsWanted(params: PushToTsLinting, author: string): boolean {
+    if (!PeopleWhoWantLintingOnTheirBranches.includes(author)) {
         return false;
     }
     return true;
@@ -69,7 +71,10 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
         const author: string = _.get(push, "after.author.person.chatId.screenName") ||
             _.get(push, "after.author.login") || "unknown";
 
-        const personCares: boolean = lintingIsWanted(push, author);
+        if(skipThisCommitEntirely(push)) {
+            return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(push)}`, me)
+        }
+        const personCares: boolean = lintingIsWanted(params, author);
 
         initialReport(ctx, push, author);
 
