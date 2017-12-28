@@ -165,7 +165,7 @@ function docker-push () {
         return 1
     fi
 
-    local tag=$DOCKER_REGISTRY/$image_name:$image_version
+    local tag=$DOCKER_USER/$image_name:$image_version
     if ! docker build . -t "$tag"; then
         err "failed to build docker image: '$tag'"
         return 1
@@ -228,7 +228,7 @@ function main () {
         return 1
     fi
 
-    if ! docker-push tslint-automation $TRAVIS_BUILD_NUMBER; then
+    if ! docker-push linting-automation $TRAVIS_BUILD_NUMBER; then
         err "docker build and push failed"
         return 1
     fi
