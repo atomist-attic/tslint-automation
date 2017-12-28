@@ -81,7 +81,7 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
             _.get(push, "after.author.login") || "unknown";
 
         if (skipThisCommitEntirely(push)) {
-            return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(push)}`, me)
+            return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(push)}`, me);
         }
         const personCares: boolean = lintingIsWanted(params, author);
 

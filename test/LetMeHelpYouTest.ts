@@ -32,7 +32,7 @@ describe("Before I can even ask, people have to be able to tell me not to offer"
     it("does not offer to make a commit for an author in the grouchy list", () => {
         const personOnTheList = _.shuffle(PeopleWhoDoNotWantMeToOfferToHelp).pop();
 
-        assert(!shouldOfferToHelp(personOnTheList))
+        assert(!shouldOfferToHelp(personOnTheList));
     });
 
     it("does offer for a person not on the list", () => {
@@ -40,10 +40,9 @@ describe("Before I can even ask, people have to be able to tell me not to offer"
             .filter(a => !PeopleWhoDoNotWantMeToOfferToHelp.includes(a))
             .pop();
 
-        assert(shouldOfferToHelp(personNotOnTheList))
+        assert(shouldOfferToHelp(personNotOnTheList));
     });
 });
-
 
 describe("Modifying the list of users we are allowed to help", () => {
 
@@ -52,17 +51,17 @@ describe("Modifying the list of users we are allowed to help", () => {
             .filter(a => !PeopleWhoWantLintingOnTheirBranches.includes(a))
             .pop();
 
-        assert(!lintingIsWanted(null, personNotOnTheList))
+        assert(!lintingIsWanted(null, personNotOnTheList));
     });
 
     it("makes a commit for a person on the list", () => {
         const personOnTheList = _.shuffle(PeopleWhoWantLintingOnTheirBranches).pop();
 
-        assert(lintingIsWanted(null, personOnTheList))
+        assert(lintingIsWanted(null, personOnTheList));
     });
 
 });
 
 function possibleAuthors() {
-    return _.shuffle(["cd", "rod", "jessitron", "frank", "someone-else"])
+    return _.shuffle(["cd", "rod", "jessitron", "frank", "someone-else"]);
 }
