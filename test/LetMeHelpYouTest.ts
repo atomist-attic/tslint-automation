@@ -27,6 +27,9 @@ import {
     lintingIsWanted, PeopleWhoDoNotWantMeToOfferToHelp, PeopleWhoWantLintingOnTheirBranches,
     shouldOfferToHelp,
 } from "../src/handlers/PushToTsLinting";
+import { NodeFsLocalProject } from "@atomist/automation-client/project/local/NodeFsLocalProject";
+import { InMemoryProject } from "@atomist/automation-client/project/mem/InMemoryProject";
+import { addPersonWhoDoesNotWantMeToOfferToHelp } from "../src/handlers/SelfConfigurate";
 
 describe("Before I can even ask, people have to be able to tell me not to offer", () => {
     it("does not offer to make a commit for an author in the grouchy list", () => {
@@ -42,6 +45,20 @@ describe("Before I can even ask, people have to be able to tell me not to offer"
 
         assert(shouldOfferToHelp(personNotOnTheList));
     });
+
+    it("can add a person to the list", done => {
+        // how do I load this project into memory again?
+        NodeFsLocalProject.fromExistingDirectory({ owner: "jess", repo: "this-one" },
+            "/Users/jessitron/code/atomist/tslint-automation")
+            .then(local => InMemoryProject.cache(local))
+            .then(thisProject => addPersonWhoDoesNotWantMeToOfferToHelp("sad-panda")(thisProject, null))
+            .then(editResult => {
+                assert(editResult.success);
+                assert(editResult.edited);
+                const changedContent = editResult.target.findFileSync("src/handlers/PushToTsLinting.ts").getContentSync();
+                assert(changedContent.includes(`"sad-panda",`));
+            }).then(() => done(), done)
+    })
 });
 
 describe("Modifying the list of users we are allowed to help", () => {
