@@ -4,7 +4,6 @@ import * as appRoot from "app-root-path";
 import * as cfenv from "cfenv";
 import { HelloWorld } from "./handlers/HelloWorld";
 import { PushToTsLinting } from "./handlers/PushToTsLinting";
-import { execufy } from "./util/execufy";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
@@ -17,6 +16,8 @@ if (githubCredsFromCloudFoundry) {
     token = githubCredsFromCloudFoundry.token;
 }
 
+export const adminCreds = { token };
+
 export let gitInfo = { sha: "unknown", branch: "unknown", repository: "unknown" };
 try {
     gitInfo = require("./git-info.json");
@@ -25,6 +26,7 @@ try {
 }
 
 const teamIds = ["T29E48P34"];
+export const adminSlackUserNames = ["jessica", "jessitron"];
 
 export const configuration: Configuration = {
     name: pj.name,
