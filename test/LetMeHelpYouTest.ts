@@ -22,6 +22,7 @@
 
 import { NodeFsLocalProject } from "@atomist/automation-client/project/local/NodeFsLocalProject";
 import { InMemoryProject } from "@atomist/automation-client/project/mem/InMemoryProject";
+import * as appRoot from "app-root-path";
 import * as _ from "lodash";
 import "mocha";
 import * as assert from "power-assert";
@@ -29,7 +30,6 @@ import {
     lintingIsWanted, PeopleWhoDoNotWantMeToOfferToHelp, PeopleWhoWantLintingOnTheirBranches,
     shouldOfferToHelp,
 } from "../src/handlers/PushToTsLinting";
-import * as appRoot from "app-root-path";
 import { addPersonWhoDoesNotWantMeToOfferToHelp } from "../src/handlers/SelfConfigurate";
 
 describe("Before I can even ask, people have to be able to tell me not to offer", () => {
