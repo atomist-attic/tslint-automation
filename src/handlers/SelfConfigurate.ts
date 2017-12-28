@@ -42,13 +42,19 @@ function initialReport(ctx: HandlerContext, parameters: StopBotheringMeParams) {
 
 export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
     public handle(ctx: HandlerContext, parameters: StopBotheringMeParams): Promise<HandlerResult> {
+        const messageId = "stop-bothering-" + parameters.screenName;
         // someday, parse reporef from package json
         return initialReport(ctx, parameters).then(() =>
         GitCommandGitProject.cloned(adminCreds, new GitHubRepoRef("atomist", "tslint-automation")))
             .then(project => addPersonWhoDoesNotWantMeToOfferToHelp(parameters.screenName)(project, ctx)
                 .then(editResult => {
                     if (editResult.success && editResult.edited) {
-                        return project.commit(`${parameters.screenName} doesn't want me to offer to help`);
+                        return project.commit(`${parameters.screenName} doesn't want me to offer to help
+
+[atomist:${messageId}]`)
+                            .then(() => project.push());
+                    } else {
+
                     }
                 }).then(() => Success));
     }
