@@ -20,6 +20,8 @@
  * of users that tslint-automation is allowed to help!
  */
 
+import { NodeFsLocalProject } from "@atomist/automation-client/project/local/NodeFsLocalProject";
+import { InMemoryProject } from "@atomist/automation-client/project/mem/InMemoryProject";
 import * as _ from "lodash";
 import "mocha";
 import * as assert from "power-assert";
@@ -27,8 +29,6 @@ import {
     lintingIsWanted, PeopleWhoDoNotWantMeToOfferToHelp, PeopleWhoWantLintingOnTheirBranches,
     shouldOfferToHelp,
 } from "../src/handlers/PushToTsLinting";
-import { NodeFsLocalProject } from "@atomist/automation-client/project/local/NodeFsLocalProject";
-import { InMemoryProject } from "@atomist/automation-client/project/mem/InMemoryProject";
 import { addPersonWhoDoesNotWantMeToOfferToHelp } from "../src/handlers/SelfConfigurate";
 
 describe("Before I can even ask, people have to be able to tell me not to offer", () => {
@@ -57,8 +57,8 @@ describe("Before I can even ask, people have to be able to tell me not to offer"
                 assert(editResult.edited);
                 const changedContent = editResult.target.findFileSync("src/handlers/PushToTsLinting.ts").getContentSync();
                 assert(changedContent.includes(`"sad-panda",`));
-            }).then(() => done(), done)
-    })
+            }).then(() => done(), done);
+    });
 });
 
 describe("Modifying the list of users we are allowed to help", () => {
