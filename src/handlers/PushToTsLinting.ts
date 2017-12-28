@@ -170,7 +170,7 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
         if (analysis.pushed && analysis.happy) {
             // we are so useful
             return ctx.messageClient.addressUsers(
-                `FYI, I fixed linting errors on your branch ${push.branch} because ${linkToCommit(push, "your commit")} failed linting. Please pull.`,
+                `Hey, I fixed some linting errors on your commit ${linkToCommit(push)}. Please pull.`,
                 analysis.author)
                 .then(() => reportToMe("I told them they should pull"));
         }
