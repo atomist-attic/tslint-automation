@@ -415,6 +415,7 @@ export function runTslint(baseDir) {
     };
     return run(options, loggo).then(status => {
         console.log("returned from run");
-        return { success: status === Status.Ok, errorOutput: logs.join("\n") };
+        // I don't know why Status.Ok NPEs in mocha at the command line. It works in IntelliJ
+        return { success: status === 0 /* Status.Ok */ , errorOutput: logs.join("\n") };
     });
 }
