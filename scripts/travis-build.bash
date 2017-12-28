@@ -154,14 +154,8 @@ function docker-push () {
     fi
     shift
 
-    if [[ ! $DOCKER_REGISTRY ]]; then
-        msg "no Docker registry set"
-        msg "skipping Docker build and push"
-        return 0
-    fi
-
-    if ! docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD" "$DOCKER_REGISTRY"; then
-        err "failed to login to docker registry: $DOCKER_REGISTRY"
+    if ! docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD" ; then
+        err "failed to login to docker registry:"
         return 1
     fi
 
