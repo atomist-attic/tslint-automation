@@ -29,6 +29,7 @@ import {
     lintingIsWanted, PeopleWhoDoNotWantMeToOfferToHelp, PeopleWhoWantLintingOnTheirBranches,
     shouldOfferToHelp,
 } from "../src/handlers/PushToTsLinting";
+import * as appRoot from "app-root-path";
 import { addPersonWhoDoesNotWantMeToOfferToHelp } from "../src/handlers/SelfConfigurate";
 
 describe("Before I can even ask, people have to be able to tell me not to offer", () => {
@@ -49,7 +50,7 @@ describe("Before I can even ask, people have to be able to tell me not to offer"
     it("can add a person to the list", done => {
         // how do I load this project into memory again?
         NodeFsLocalProject.fromExistingDirectory({ owner: "jess", repo: "this-one" },
-            "/Users/jessitron/code/atomist/tslint-automation")
+            appRoot.path)
             .then(local => InMemoryProject.cache(local))
             .then(thisProject => addPersonWhoDoesNotWantMeToOfferToHelp("sad-panda")(thisProject, null))
             .then(editResult => {
