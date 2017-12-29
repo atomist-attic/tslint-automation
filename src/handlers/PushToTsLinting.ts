@@ -16,7 +16,7 @@ import * as graphql from "../typings/types";
 import { getFileContent } from "../util/getFileContent";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
-export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];
+export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "the-grinch"];
 const me = ["jessica", "jessitron"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
