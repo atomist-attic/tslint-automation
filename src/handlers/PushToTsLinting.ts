@@ -10,11 +10,11 @@ import * as slack from "@atomist/slack-messages/SlackMessages";
 import { exec } from "child-process-promise";
 import * as stringify from "json-stringify-safe";
 import * as _ from "lodash";
+import * as path from "path";
 import { Options, run, Status } from "tslint/lib/runner";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
 import { getFileContent } from "../util/getFileContent";
-import * as path from "path";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];

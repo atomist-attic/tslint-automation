@@ -7,12 +7,12 @@ import { Parameters } from "@atomist/automation-client/decorators";
 import { GitHubRepoRef } from "@atomist/automation-client/operations/common/GitHubRepoRef";
 import { EditResult, failedEdit, ProjectEditor, successfulEdit } from "@atomist/automation-client/operations/edit/projectEditor";
 import { GitCommandGitProject } from "@atomist/automation-client/project/git/GitCommandGitProject";
+import { GitStatus } from "@atomist/automation-client/project/git/gitStatus";
 import { Project } from "@atomist/automation-client/project/Project";
 import * as slack from "@atomist/slack-messages/SlackMessages";
-import { adminCreds, adminSlackUserNames } from "../atomist.config";
-import { GitStatus } from "@atomist/automation-client/project/git/gitStatus";
 import * as stringify from "json-stringify-safe";
 import * as _ from "lodash";
+import { adminCreds, adminSlackUserNames } from "../atomist.config";
 
 const whereToAdd = /PeopleWhoDoNotWantMeToOfferToHelp *= *\[/;
 
@@ -44,12 +44,12 @@ const MyGitHubOrganization = "atomist";
 const MyGitHubRepository = "tslint-automation";
 
 interface Analysis {
-    pushed: boolean,
-    editResult?: EditResult,
-    messageId: string,
-    sha?: string,
-    error?: Error,
-    message?: string
+    pushed: boolean;
+    editResult?: EditResult;
+    messageId: string;
+    sha?: string;
+    error?: Error;
+    message?: string;
 }
 
 @CommandHandler("Stop offering to help the invoking user", "stop offering to help with linting errors")
@@ -72,7 +72,7 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
                                         reportError("git status failed"))
                                     .then(() => ({ pushed: true, editResult, messageId }));
                             } else {
-                                return Promise.resolve({ pushed: false, editResult, messageId })
+                                return Promise.resolve({ pushed: false, editResult, messageId });
                             }
                         },
                         reportError("editor threw an exception"))
@@ -88,7 +88,8 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
 }
 
 function initialReport(context: HandlerContext, parameters: StopBotheringMeParams) {
-    return context.messageClient.addressUsers(`Sad day: ${parameters.screenName} invoked StopBotheringMe.`, adminSlackUserNames, { id: context.correlationId });
+    return context.messageClient.addressUsers(`Sad day: ${parameters.screenName} invoked StopBotheringMe.`,
+        adminSlackUserNames, { id: context.correlationId });
 }
 
 function reportProgress(context: HandlerContext, messageId: string, details: { sha: string }) {
@@ -97,7 +98,7 @@ function reportProgress(context: HandlerContext, messageId: string, details: { s
 :white_check_mark: ${linkToCommit(details)}
 :empty-orange-square: Build
 :empty-orange-square: Deploy`,
-        { id: messageId })
+        { id: messageId });
 }
 
 function linkToCommit(details: { sha?: string }): string {
@@ -124,7 +125,7 @@ function reportErrorFunction(context: HandlerContext, parameters: StopBotheringM
         };
         return context.messageClient.addressUsers(slackMessage, adminSlackUserNames, { id: context.correlationId })
             .then(() => Promise.reject(error));
-    }
+    };
 }
 
 function finalReport(context: HandlerContext, parameters: StopBotheringMeParams,
@@ -134,13 +135,13 @@ function finalReport(context: HandlerContext, parameters: StopBotheringMeParams,
         color: "#20aa00",
         fields: fields(["edited", "messageId"], ["commit"],
             {  ...analysis, commit: linkToCommit(analysis),
-                edited: analysis.editResult.edited,}),
+                edited: analysis.editResult.edited}),
     };
     const message: slack.SlackMessage = {
         text: `${parameters.screenName} invoked StopBotheringMe.`,
         attachments: [attachment],
     };
-    return context.messageClient.addressUsers(message, adminSlackUserNames, { id: context.correlationId })
+    return context.messageClient.addressUsers(message, adminSlackUserNames, { id: context.correlationId });
 }
 
 function fields(shortOnes: string[], longOnes: string[], source: object) {
