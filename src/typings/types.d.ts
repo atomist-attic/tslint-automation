@@ -140,6 +140,52 @@ export type _PullRequestImpactOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "i
 /* Ordering Enum for UserJoinedChannel */
 export type _UserJoinedChannelOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "id_asc" | "id_desc";
 
+export namespace BuildFromPush {
+  export type Variables = {
+  }
+
+  export type Subscription = {
+    Build?: Build[] | null; 
+  } 
+
+  export type Build = {
+    buildId?: string | null; 
+    buildUrl?: string | null; 
+    name?: string | null; 
+    status?: BuildStatus | null; 
+    repo?: Repo | null; 
+    push?: Push | null; 
+    commit?: Commit | null; 
+  } 
+
+  export type Repo = {
+    owner?: string | null; 
+    name?: string | null; 
+  } 
+
+  export type Push = {
+    branch?: string | null; 
+  } 
+
+  export type Commit = {
+    message?: string | null; 
+    sha?: string | null; 
+    author?: Author | null; 
+  } 
+
+  export type Author = {
+    login?: string | null; 
+    person?: Person | null; 
+  } 
+
+  export type Person = {
+    chatId?: ChatId | null; 
+  } 
+
+  export type ChatId = {
+    screenName?: string | null; 
+  } 
+}
 export namespace PushToTsLinting {
   export type Variables = {
   }

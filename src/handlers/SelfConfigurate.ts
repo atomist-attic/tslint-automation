@@ -1,6 +1,6 @@
 import {
     CommandHandler, Failure,
-    HandleCommand, HandlerContext, HandlerResult, MappedParameter, MappedParameters, Parameter, Secret, Secrets,
+    HandleCommand, HandlerContext, HandlerResult, logger, MappedParameter, MappedParameters, Parameter, Secret, Secrets,
     Success,
 } from "@atomist/automation-client";
 import { Parameters } from "@atomist/automation-client/decorators";
@@ -69,8 +69,9 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
 [atomist:${messageId}]`)
                                     .then(() => project.push(), reportError("commit failed"))
                                     .then(() => project.gitStatus(), reportError("push failed"))
-                                    .then((gs: GitStatus) => reportProgress(context, messageId, { sha: gs.sha })
-                                            .then(() => ({ pushed: true, editResult, messageId, sha: gs.sha })),
+                                    .then((gs: GitStatus) =>
+                                            reportProgress(context, parameters.screenName, messageId, { sha: gs.sha })
+                                                .then(() => ({ pushed: true, editResult, messageId, sha: gs.sha })),
                                         reportError("git status failed"));
                             } else {
                                 return Promise.resolve({ pushed: false, editResult, messageId });
@@ -88,18 +89,43 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
 
 }
 
+export function isMine(commit: { message: string }): boolean {
+    logger.info("considering commit message: " + commit.message);
+    return !!commit.message.match(/\[atomist:(stop-bothering-\S*)\]/);
+}
+
+export function parseMessageId(commitMessage: string) {
+    const match = commitMessage.match(/\[atomist:(stop-bothering-\S*)\]/);
+    if (!match) {
+        throw new Error("I don't recognize this commit message: " + commitMessage)
+    }
+    return match[1];
+}
+
 function initialReport(context: HandlerContext, parameters: StopBotheringMeParams) {
     return context.messageClient.addressUsers(`Sad day: ${parameters.screenName} invoked StopBotheringMe.`,
         adminSlackUserNames, { id: context.correlationId });
 }
 
-function reportProgress(context: HandlerContext, messageId: string, details: { sha: string }) {
-    return context.messageClient.respond(
+export function reportProgress(context: HandlerContext,
+                        screenName: string,
+                        messageId: string,
+                        details: {
+                            sha: string, buildUrl?: string,
+                            buildStatusEmoji?: string
+                        }) {
+    console.log("Addressing user: " + screenName);
+    const buildEmoji = details.buildStatusEmoji || ":empty-orange-square:";
+    const buildMessage = details.buildUrl ? slack.url(details.buildUrl, "Build") :
+        "Build";
+    return context.messageClient.addressUsers(
         `I have changed my programming to avoid offering to help with your linting errors in the future.
 :white_check_mark: ${linkToCommit(details)}
-:empty-orange-square: Build
+${buildEmoji} ${buildMessage}
 :empty-orange-square: Deploy`,
-        { id: messageId });
+        adminSlackUserNames.concat(screenName), // also send it to me. That's more fun
+      //  { id: messageId }
+        );
 }
 
 function linkToCommit(details: { sha?: string }): string {

@@ -1,0 +1,27 @@
+subscription BuildFromPush {
+    Build(trigger: push) {
+        buildId
+        buildUrl
+        name
+        status
+        repo {
+            owner
+            name
+        }
+        push {
+            branch
+        }
+        commit {
+            message
+            sha
+            author {
+                login
+                person {
+                    chatId {
+                        screenName
+                    }
+                }
+            }
+        }
+    }
+}

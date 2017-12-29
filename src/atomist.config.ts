@@ -6,6 +6,7 @@ import { HelloWorld } from "./handlers/HelloWorld";
 import { PushToTsLinting } from "./handlers/PushToTsLinting";
 import { StopBotheringMe } from "./handlers/SelfConfigurate";
 import { DeployAfterSuccessfulBuild } from "./handlers/DeploySelf";
+import { UpdateMessageOnBuild } from "./handlers/UpdateMessageOnBuild";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
@@ -41,6 +42,7 @@ export const configuration: Configuration = {
     events: [
         () => new PushToTsLinting(),
         DeployAfterSuccessfulBuild,
+        UpdateMessageOnBuild,
     ],
     token,
     http: {
