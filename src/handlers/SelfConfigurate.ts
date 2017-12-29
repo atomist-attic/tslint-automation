@@ -118,13 +118,13 @@ export function reportProgress(context: HandlerContext,
     const buildEmoji = details.buildStatusEmoji || ":empty-orange-square:";
     const buildMessage = details.buildUrl ? slack.url(details.buildUrl, "Build") :
         "Build";
-    return context.messageClient.addressUsers(
-        `I have changed my programming to avoid offering to help with your linting errors in the future.
+    return context.messageClient.addressChannels(
+        `Dear ${screenName}: I have changed my programming to avoid offering to help with your linting errors in the future.
 :white_check_mark: ${linkToCommit(details)}
 ${buildEmoji} ${buildMessage}
 :empty-orange-square: Deploy`,
-        adminSlackUserNames.concat(screenName), // also send it to me. That's more fun
-      //  { id: messageId }
+       "tslint-automation", // adminSlackUserNames.concat(screenName), // also send it to me. That's more fun
+        { id: messageId }
         );
 }
 

@@ -23,7 +23,8 @@ export const adminCreds = { token };
 
 export let gitInfo = { sha: "unknown", branch: "unknown", repository: "unknown" };
 try {
-    gitInfo = require("./git-info.json");
+    gitInfo = require(appRoot.path + "/git-info.json");
+    logger.info("Found git-info.json!")
 } catch (e) {
     logger.warn("Did not locate git-info.json");
 }
