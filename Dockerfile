@@ -2,6 +2,9 @@ FROM node:8
 
 ENV NPM_CONFIG_LOGLEVEL warn
 
+# I need gcloud to deploy to GKE
+RUN curl -sSL https://sdk.cloud.google.com | bash
+
 # Create app directory
 RUN mkdir -p /app
 WORKDIR /app
@@ -15,6 +18,7 @@ COPY . /app
 
 RUN  git config --global user.email "bot@atomist.com"
 RUN  git config --global user.name "Atomist Bot"
+
 
 ENV SUPPRESS_NO_CONFIG_WARNING true
 
