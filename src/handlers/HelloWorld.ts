@@ -2,7 +2,7 @@ import { CommandHandler, HandleCommand, HandlerContext } from "@atomist/automati
 import { configuration } from "../atomist.config";
 import { whereAmIRunning } from "../util/provenance";
 
-@CommandHandler("Reveal the running version", "hello linting-automation")
+@CommandHandler("Reveal the running version", "hello tslint-automation")
 export class HelloWorld implements HandleCommand {
 
     public handle(context: HandlerContext) {

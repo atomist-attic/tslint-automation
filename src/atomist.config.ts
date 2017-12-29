@@ -4,6 +4,7 @@ import * as appRoot from "app-root-path";
 import * as cfenv from "cfenv";
 import { HelloWorld } from "./handlers/HelloWorld";
 import { PushToTsLinting } from "./handlers/PushToTsLinting";
+import { StopBotheringMe } from "./handlers/SelfConfigurate";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
@@ -34,6 +35,7 @@ export const configuration: Configuration = {
     teamIds,
     commands: [
         HelloWorld,
+        StopBotheringMe,
     ],
     events: [
         () => new PushToTsLinting(),
