@@ -138,65 +138,66 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
         });
 
         return letsPushIt
-            .then(analysis => this.sendNotification(params.githubToken, ctx, push, analysis))
+            .then(analysis => sendNotification(params.githubToken, ctx, push, analysis))
             .catch(error => reportError(ctx, push, error));
     }
 
-    private sendNotification(token: string, ctx: HandlerContext, push: graphql.PushToTsLinting.Push,
-                             analysis: Analysis): Promise<any> {
+}
 
-        const whoami = `${configuration.name}:${configuration.version}`;
+function sendNotification(token: string, ctx: HandlerContext, push: graphql.PushToTsLinting.Push,
+                          analysis: Analysis): Promise<any> {
 
-        function reportToMe(notification: string) {
-            const details: slack.SlackMessage = {
-                text: `${analysis.author} made ${linkToCommit(push)} to ${push.branch}`,
-                attachments: [
-                    {
-                        fallback: "did stuff",
-                        text: notification,
-                        footer: whoami,
-                    }
-                    , formatAnalysis(ctx, analysis)],
-            };
+    const whoami = `${configuration.name}:${configuration.version}`;
 
-            return ctx.messageClient.addressUsers(
-                details,
-                me, { id: ctx.correlationId, ts: 2 });
-        }
+    function reportToMe(notification: string) {
+        const details: slack.SlackMessage = {
+            text: `${analysis.author} made ${linkToCommit(push)} to ${push.branch}`,
+            attachments: [
+                {
+                    fallback: "did stuff",
+                    text: notification,
+                    footer: whoami,
+                }
+                , formatAnalysis(ctx, analysis)],
+        };
 
-        if (!analysis.lintable) {
-            logger.info("Nothing to do on project " + push.repo + ", not lintable");
-            return reportToMe("nothing");
-        }
-        if (analysis.pushed && analysis.happy) {
-            // we are so useful
-            return ctx.messageClient.addressUsers(
-                `Hey, I fixed some linting errors on your commit ${linkToCommit(push)}. Please pull.`,
-                analysis.author)
-                .then(() => reportToMe("I told them they should pull"));
-        }
-        if (analysis.happy && analysis.changed && !analysis.personWantsMyHelp && !analysis.offered) {
-            return reportToMe(`I could have fixed it, but didn't because ${analysis.author} didn't want me to`);
-        }
-        if (analysis.offered) {
-            return reportToMe(`I offered to help ${analysis.author}`);
-        }
-        if (!analysis.pushed && !analysis.happy) {
-
-            return problemsToAttachments(token, push, analysis.problems)
-                .then(attachments =>
-                    ctx.messageClient.addressUsers({
-                            text:
-                                `Bad news: there are some tricky linting errors on ${
-                                    linkToCommit(push, "your commit")} to ${push.repo.name}#${push.branch}.`,
-                            attachments,
-                        },
-                        analysis.author))
-                .then(() => reportToMe("I told them to fix it themselves"));
-        }
-        // OK I'm not handling the other cases. Tell me about it.
-        return reportToMe("I did nothing");
+        return ctx.messageClient.addressUsers(
+            details,
+            me, { id: ctx.correlationId, ts: 2 });
     }
+
+    if (!analysis.lintable) {
+        logger.info("Nothing to do on project " + push.repo + ", not lintable");
+        return reportToMe("nothing");
+    }
+    if (analysis.pushed && analysis.happy) {
+        // we are so useful
+        return ctx.messageClient.addressUsers(
+            `Hey, I fixed some linting errors on your commit ${linkToCommit(push)}. Please pull.`,
+            analysis.author)
+            .then(() => reportToMe("I told them they should pull"));
+    }
+    if (analysis.happy && analysis.changed && !analysis.personWantsMyHelp && !analysis.offered) {
+        return reportToMe(`I could have fixed it, but didn't because ${analysis.author} didn't want me to`);
+    }
+    if (analysis.offered) {
+        return reportToMe(`I offered to help ${analysis.author}`);
+    }
+    if (!analysis.pushed && !analysis.happy) {
+
+        return problemsToAttachments(token, push, analysis.problems)
+            .then(attachments =>
+                ctx.messageClient.addressUsers({
+                        text:
+                            `Bad news: there are some tricky linting errors on ${
+                                linkToCommit(push, "your commit")} to ${push.repo.name}#${push.branch}.`,
+                        attachments,
+                    },
+                    analysis.author))
+            .then(() => reportToMe("I told them to fix it themselves"));
+    }
+// OK I'm not handling the other cases. Tell me about it.
+    return reportToMe("I did nothing");
 }
 
 function offerToHelp(context: HandlerContext): Promise<void> {
@@ -425,6 +426,6 @@ export function runTslint(baseDir) {
     return run(options, loggo).then(status => {
         console.log("returned from run");
         // I don't know why Status.Ok NPEs in mocha at the command line. It works in IntelliJ
-        return { success: status === 0 /* Status.Ok */ , errorOutput: logs.join("\n") };
+        return { success: status === 0 /* Status.Ok */, errorOutput: logs.join("\n") };
     });
 }
