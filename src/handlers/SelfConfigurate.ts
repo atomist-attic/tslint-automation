@@ -12,7 +12,7 @@ import { Project } from "@atomist/automation-client/project/Project";
 import * as slack from "@atomist/slack-messages/SlackMessages";
 import * as stringify from "json-stringify-safe";
 import * as _ from "lodash";
-import { adminCreds, adminSlackUserNames } from "../atomist.config";
+import { adminChannelId, adminCreds, adminSlackUserNames } from "../atomist.config";
 
 const whereToAdd = /PeopleWhoDoNotWantMeToOfferToHelp *= *\[/;
 
@@ -59,8 +59,11 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
         const messageId = "stop-bothering-" + parameters.screenName;
         const reportError = reportErrorFunction(context, parameters);
         // someday, parse reporef from package json
-        return initialReport(context, parameters).then(() =>
-            GitCommandGitProject.cloned(adminCreds, new GitHubRepoRef(MyGitHubOrganization, MyGitHubRepository)))
+        return initialReport(context, parameters)
+            .then(() => context.messageClient.respond(
+                "OK. I'll update my program and not offer again. If you change your mind, post in " + slack.channel(adminChannelId)))
+            .then(() =>
+                GitCommandGitProject.cloned(adminCreds, new GitHubRepoRef(MyGitHubOrganization, MyGitHubRepository)))
             .then(project => addPersonWhoDoesNotWantMeToOfferToHelp(parameters.screenName)(project, context)
                     .then(editResult => {
                             if (editResult.success && editResult.edited) {
@@ -108,24 +111,25 @@ function initialReport(context: HandlerContext, parameters: StopBotheringMeParam
 }
 
 export function reportProgress(context: HandlerContext,
-                        screenName: string,
-                        messageId: string,
-                        details: {
-                            sha: string, buildUrl?: string,
-                            buildStatusEmoji?: string
-                        }) {
+                               screenName: string,
+                               messageId: string,
+                               details: {
+                                   sha: string, buildUrl?: string,
+                                   buildStatusEmoji?: string
+                               }) {
     console.log("Addressing user: " + screenName);
     const buildEmoji = details.buildStatusEmoji || ":empty-orange-square:";
     const buildMessage = details.buildUrl ? slack.url(details.buildUrl, "Build") :
         "Build";
+    // I wanted to send this in a DM but it is not updatable then.
     return context.messageClient.addressChannels(
         `Dear ${screenName}: I have changed my programming to avoid offering to help with your linting errors in the future.
 :white_check_mark: ${linkToCommit(details)}
 ${buildEmoji} ${buildMessage}
 :empty-orange-square: Deploy`,
-       "tslint-automation", // adminSlackUserNames.concat(screenName), // also send it to me. That's more fun
-        { id: messageId }
-        );
+        adminChannelId,
+        { id: messageId },
+    );
 }
 
 function linkToCommit(details: { sha?: string }): string {

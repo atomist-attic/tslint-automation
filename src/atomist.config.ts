@@ -31,6 +31,7 @@ try {
 
 const teamIds = ["T29E48P34"];
 export const adminSlackUserNames = ["jessica", "jessitron"];
+export const adminChannelId = "C8JUBSYKD";
 
 export const configuration: Configuration = {
     name: pj.name,
