@@ -14,6 +14,7 @@ import { Options, run, Status } from "tslint/lib/runner";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
 import { getFileContent } from "../util/getFileContent";
+import * as path from "path";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];
@@ -107,7 +108,7 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
                         if (lintStatus.success) {
                             return { ...soFar, happy: true };
                         } else {
-                            return { ...soFar, happy: false, problems: findComplaints(push, lintStatus.errorOutput) };
+                            return { ...soFar, happy: false, problems: findComplaints(push, soFar.project.baseDir, lintStatus.errorOutput) };
                         }
                     });
             } else {
@@ -265,22 +266,22 @@ interface Location {
     readonly description: string;
 }
 
-function locate(tsError: string): Location | undefined {
+function locate(baseDir: string, tsError: string): Location | undefined {
     const pathAndLine = /([^\s]+)\[(\d+), (\d+)\]/;
     const match = tsError.match(pathAndLine);
     if (!match) {
         return undefined;
     }
     return {
-        path: match[1],
+        path: path.relative(baseDir, match[1]),
         lineFrom1: +match[2],
         columnFrom1: +match[3],
         description: match[0],
     };
 }
 
-function addLinkToProblem(push: graphql.PushToTsLinting.Push, tsError: string): string {
-    const location = locate(tsError);
+function addLinkToProblem(push: graphql.PushToTsLinting.Push, baseDir: string, tsError: string): string {
+    const location = locate(baseDir, tsError);
     if (!location) {
         return tsError;
     }
@@ -381,7 +382,7 @@ function recognizeError(tsError: string): RecognizedError {
     return CommentFormatError.recognize(name, description) || new RecognizedError(name, description);
 }
 
-function findComplaints(push: graphql.PushToTsLinting.Push, tslintOutput: string): Problem[] {
+function findComplaints(push: graphql.PushToTsLinting.Push, baseDir: string, tslintOutput: string): Problem[] {
     if (!tslintOutput) {
         return undefined;
     }
@@ -389,8 +390,8 @@ function findComplaints(push: graphql.PushToTsLinting.Push, tslintOutput: string
         .split("\n")
         .filter(s => s.match(/^ERROR: /))
         .map(p => ({
-            text: addLinkToProblem(push, p),
-            location: locate(p),
+            text: addLinkToProblem(push, baseDir, p),
+            location: locate(baseDir, p),
             recognizedError: recognizeError(p),
         }));
 }
