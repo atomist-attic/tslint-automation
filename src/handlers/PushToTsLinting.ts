@@ -15,6 +15,7 @@ import { Options, run, Status } from "tslint/lib/runner";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
 import { getFileContent } from "../util/getFileContent";
+import { ProjectOperationCredentials } from "@atomist/automation-client/operations/common/ProjectOperationCredentials";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "jessica", "jessica", "the-grinch"];
@@ -53,7 +54,7 @@ function skipThisCommitEntirely(push: graphql.PushToTsLinting.Push): boolean {
     return false;
 }
 
-export function lintingIsWanted(params: PushToTsLinting, author: string): boolean {
+export function lintingIsWanted(override: boolean, author: string): boolean {
     if (PeopleWhoWantLintingOnTheirBranches.includes(author)) {
         return true;
     }
@@ -80,16 +81,16 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
 
         const author: string = _.get(push, "after.author.person.chatId.screenName") ||
             _.get(push, "after.author.login") || "unknown";
-        return handleTsLint(ctx, params, push, author)
+        return handleTsLint(ctx, { token: params.githubToken }, push, author)
 
     }
 }
 
-function handleTsLint(ctx: HandlerContext, params: PushToTsLinting, push: graphql.PushToTsLinting.Push, author: string) {
+function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials, push: graphql.PushToTsLinting.Push, author: string) {
     if (skipThisCommitEntirely(push)) {
         return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(push)}`, me);
     }
-    const personCares: boolean = lintingIsWanted(params, author);
+    const personCares: boolean = lintingIsWanted(false, author);
 
     initialReport(ctx, push, author);
 
@@ -97,7 +98,7 @@ function handleTsLint(ctx: HandlerContext, params: PushToTsLinting, push: graphq
 
     const startAnalysis: Partial<Analysis> = { personWantsMyHelp: personCares, author };
 
-    const projectPromise: Promise<GitProject> = GitCommandGitProject.cloned({ token: params.githubToken },
+    const projectPromise: Promise<GitProject> = GitCommandGitProject.cloned(creds,
         new GitHubRepoRef(push.repo.owner, push.repo.name, push.branch));
     const isItLintable: Promise<Partial<Analysis>> = projectPromise.then(project => {
         if (project.fileExistsSync("tslint.json")) {
@@ -143,7 +144,7 @@ function handleTsLint(ctx: HandlerContext, params: PushToTsLinting, push: graphq
     });
 
     return letsPushIt
-        .then(analysis => sendNotification(params.githubToken, ctx, push, analysis))
+        .then(analysis => sendNotification(creds.token, ctx, push, analysis))
         .catch(error => reportError(ctx, push, error));
 }
 
