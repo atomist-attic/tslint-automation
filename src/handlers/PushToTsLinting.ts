@@ -46,8 +46,8 @@ status:   ${stringify(a.status)}
 error: ${a.error}`;
 }
 
-function skipThisCommitEntirely(push: graphql.PushToTsLinting.Push): boolean {
-    if (push.after.message === CommitMessage) {
+function skipThisCommitEntirely(commitMessage: string): boolean {
+    if (commitMessage === CommitMessage) {
         // haha, I made this commit
         return true;
     }
@@ -79,27 +79,47 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
                   ctx: HandlerContext, params: this): Promise<HandlerResult> {
         const push = event.data.Push[0];
 
+        const details : Details = {
+            ...push,
+            commit: push.after,
+        } as Details;
+
         const author: string = _.get(push, "after.author.person.chatId.screenName") ||
             _.get(push, "after.author.login") || "unknown";
-        return handleTsLint(ctx, { token: params.githubToken }, push, author)
+
+        return handleTsLint(ctx, { token: params.githubToken }, details, author)
 
     }
 }
 
-function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials, push: graphql.PushToTsLinting.Push, author: string) {
-    if (skipThisCommitEntirely(push)) {
-        return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(push)}`, me);
+interface Details {
+    commit: {
+        message: string,
+        sha: string,
+    },
+    branch: string,
+    repo: {
+        owner: string,
+        name: string,
+    }
+}
+
+function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
+                      details: Details, author: string) {
+
+    if (skipThisCommitEntirely(details.commit.message)) {
+        return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(details)}`, me);
     }
     const personCares: boolean = lintingIsWanted(false, author);
 
-    initialReport(ctx, push, author);
+    initialReport(ctx, details, author);
 
     // end debugging
 
     const startAnalysis: Partial<Analysis> = { personWantsMyHelp: personCares, author };
 
     const projectPromise: Promise<GitProject> = GitCommandGitProject.cloned(creds,
-        new GitHubRepoRef(push.repo.owner, push.repo.name, push.branch));
+        new GitHubRepoRef(details.repo.owner, details.repo.name, details.branch));
     const isItLintable: Promise<Partial<Analysis>> = projectPromise.then(project => {
         if (project.fileExistsSync("tslint.json")) {
             return { ...startAnalysis, project, lintable: true };
@@ -114,7 +134,7 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials, p
                     if (lintStatus.success) {
                         return { ...soFar, happy: true };
                     } else {
-                        return { ...soFar, happy: false, problems: findComplaints(push, soFar.project.baseDir, lintStatus.errorOutput) };
+                        return { ...soFar, happy: false, problems: findComplaints(details, soFar.project.baseDir, lintStatus.errorOutput) };
                     }
                 });
         } else {
@@ -144,11 +164,11 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials, p
     });
 
     return letsPushIt
-        .then(analysis => sendNotification(creds.token, ctx, push, analysis))
-        .catch(error => reportError(ctx, push, error));
+        .then(analysis => sendNotification(creds.token, ctx, details, analysis))
+        .catch(error => reportError(ctx, details, error));
 }
 
-function sendNotification(token: string, ctx: HandlerContext, push: graphql.PushToTsLinting.Push,
+function sendNotification(token: string, ctx: HandlerContext, push: Details,
                           analysis: Analysis): Promise<any> {
 
     const whoami = `${configuration.name}:${configuration.version}`;
@@ -226,29 +246,29 @@ function fields(shortOnes: string[], longOnes: string[], source: object) {
     return shorts.concat(longs);
 }
 
-function initialReport(ctx: HandlerContext, push: graphql.PushToTsLinting.Push, author: string) {
+function initialReport(ctx: HandlerContext, push: Details, author: string) {
     const whoami = `${configuration.name}:${configuration.version}`;
 
     ctx.messageClient.addressUsers(
-        `${whoami}: ${author} made ${linkToCommit(push)}, message \`${push.after.message}\`. Linting`, me,
+        `${whoami}: ${author} made ${linkToCommit(push)}, message \`${push.commit.message}\`. Linting`, me,
         { id: ctx.correlationId, ts: 1 });
 }
 
-function reportError(ctx: HandlerContext, push: graphql.PushToTsLinting.Push, error: Error) {
+function reportError(ctx: HandlerContext, push: Details, error: Error) {
     ctx.messageClient.addressUsers(`Uncaught error while linting ${linkToCommit(push)}: ` + error, me);
 }
 
-function linkToCommit(push: graphql.PushToTsLinting.Push, text: string = `commit on ${push.repo.name}#${push.branch}`) {
+function linkToCommit(push: Details, text: string = `commit on ${push.repo.name}#${push.branch}`) {
     return slack.url(
-        `https://github.com/${push.repo.owner}/${push.repo.name}/commit/${push.after.sha}`,
+        `https://github.com/${push.repo.owner}/${push.repo.name}/commit/${push.commit.sha}`,
         text);
 }
 
-function urlToLine(push: graphql.PushToTsLinting.Push, location: Location) {
-    return `https://github.com/${push.repo.owner}/${push.repo.name}/blob/${push.after.sha}/${location.path}#L${location.lineFrom1}`;
+function urlToLine(push: Details, location: Location) {
+    return `https://github.com/${push.repo.owner}/${push.repo.name}/blob/${push.commit.sha}/${location.path}#L${location.lineFrom1}`;
 }
 
-function linkToLine(push: graphql.PushToTsLinting.Push, location: Location) {
+function linkToLine(push: Details, location: Location) {
     return slack.url(
         urlToLine(push, location),
         location.description);
@@ -293,7 +313,7 @@ function locate(baseDir: string, tsError: string): Location | undefined {
     };
 }
 
-function addLinkToProblem(push: graphql.PushToTsLinting.Push, baseDir: string, tsError: string): string {
+function addLinkToProblem(push: Details, baseDir: string, tsError: string): string {
     const location = locate(baseDir, tsError);
     if (!location) {
         return tsError;
@@ -301,14 +321,14 @@ function addLinkToProblem(push: graphql.PushToTsLinting.Push, baseDir: string, t
     return tsError.replace(location.formerDescription, linkToLine(push, location));
 }
 
-function problemsToAttachments(token: string, push: graphql.PushToTsLinting.Push, problems?: Problem[]): Promise<slack.Attachment[]> {
+function problemsToAttachments(token: string, push: Details, problems?: Problem[]): Promise<slack.Attachment[]> {
     if (!problems) {
         return Promise.resolve([]);
     }
     return Promise.all(problems.map(p => problemToAttachment(token, push, p)));
 }
 
-function problemToAttachment(token: string, push: graphql.PushToTsLinting.Push, problem: Problem): Promise<slack.Attachment> {
+function problemToAttachment(token: string, push: Details, problem: Problem): Promise<slack.Attachment> {
     const output: slack.Attachment = { fallback: "problem" };
 
     if (problem.location) {
@@ -323,7 +343,7 @@ function problemToAttachment(token: string, push: graphql.PushToTsLinting.Push, 
     }
 
     if (problem.recognizedError && problem.location && problem.recognizedError.usefulToShowLine) {
-        const where = { name: push.repo.name, owner: push.repo.owner, ref: push.after.sha };
+        const where = { name: push.repo.name, owner: push.repo.owner, ref: push.commit.sha };
         return getFileContent(token, where, problem.location.path).then(content => {
             output.text = "`" + getLine(content, problem.location.lineFrom1) + "`";
             return output;
@@ -395,7 +415,7 @@ function recognizeError(tsError: string): RecognizedError {
     return CommentFormatError.recognize(name, description) || new RecognizedError(name, description);
 }
 
-function findComplaints(push: graphql.PushToTsLinting.Push, baseDir: string, tslintOutput: string): Problem[] {
+function findComplaints(push: Details, baseDir: string, tslintOutput: string): Problem[] {
     if (!tslintOutput) {
         return undefined;
     }
