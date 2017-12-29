@@ -80,68 +80,71 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
 
         const author: string = _.get(push, "after.author.person.chatId.screenName") ||
             _.get(push, "after.author.login") || "unknown";
+        return handleTsLint(ctx, params, push, author)
 
-        if (skipThisCommitEntirely(push)) {
-            return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(push)}`, me);
-        }
-        const personCares: boolean = lintingIsWanted(params, author);
-
-        initialReport(ctx, push, author);
-
-        // end debugging
-
-        const startAnalysis: Partial<Analysis> = { personWantsMyHelp: personCares, author };
-
-        const projectPromise: Promise<GitProject> = GitCommandGitProject.cloned({ token: params.githubToken },
-            new GitHubRepoRef(push.repo.owner, push.repo.name, push.branch));
-        const isItLintable: Promise<Partial<Analysis>> = projectPromise.then(project => {
-            if (project.fileExistsSync("tslint.json")) {
-                return { ...startAnalysis, project, lintable: true };
-            } else {
-                return { ...startAnalysis, project, lintable: false };
-            }
-        });
-        const soLintIt: Promise<Partial<Analysis>> = isItLintable.then(soFar => {
-            if (soFar.lintable) {
-                return runTslint(soFar.project.baseDir)
-                    .then(lintStatus => {
-                        if (lintStatus.success) {
-                            return { ...soFar, happy: true };
-                        } else {
-                            return { ...soFar, happy: false, problems: findComplaints(push, soFar.project.baseDir, lintStatus.errorOutput) };
-                        }
-                    });
-            } else {
-                return Promise.resolve(soFar);
-            }
-        });
-        const didItChange: Promise<Partial<Analysis>> = soLintIt.then(soFar =>
-            soFar.project.gitStatus()
-                .then(status => {
-                    return ({ ...soFar, changed: !status.isClean, status });
-                }));
-        const letsPushIt: Promise<Analysis> = didItChange.then(soFar => {
-            if (soFar.changed && soFar.happy) {
-                if (soFar.personWantsMyHelp) {
-                    return soFar.project.commit(CommitMessage)
-                        .then(() => soFar.project.push())
-                        .then(() => ({ ...soFar, pushed: true, offered: false } as Analysis))
-                        .catch(error => ({ ...soFar, pushed: false, offered: false, error } as Analysis));
-                } else {
-                    if (shouldOfferToHelp(soFar.author)) {
-                        return offerToHelp(ctx).then(() => ({ ...soFar, pushed: false, offered: true } as Analysis));
-                    }
-                }
-            } else {
-                return Promise.resolve({ ...soFar, pushed: false, offered: false } as Analysis);
-            }
-        });
-
-        return letsPushIt
-            .then(analysis => sendNotification(params.githubToken, ctx, push, analysis))
-            .catch(error => reportError(ctx, push, error));
     }
+}
 
+function handleTsLint(ctx: HandlerContext, params: PushToTsLinting, push: graphql.PushToTsLinting.Push, author: string) {
+    if (skipThisCommitEntirely(push)) {
+        return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(push)}`, me);
+    }
+    const personCares: boolean = lintingIsWanted(params, author);
+
+    initialReport(ctx, push, author);
+
+    // end debugging
+
+    const startAnalysis: Partial<Analysis> = { personWantsMyHelp: personCares, author };
+
+    const projectPromise: Promise<GitProject> = GitCommandGitProject.cloned({ token: params.githubToken },
+        new GitHubRepoRef(push.repo.owner, push.repo.name, push.branch));
+    const isItLintable: Promise<Partial<Analysis>> = projectPromise.then(project => {
+        if (project.fileExistsSync("tslint.json")) {
+            return { ...startAnalysis, project, lintable: true };
+        } else {
+            return { ...startAnalysis, project, lintable: false };
+        }
+    });
+    const soLintIt: Promise<Partial<Analysis>> = isItLintable.then(soFar => {
+        if (soFar.lintable) {
+            return runTslint(soFar.project.baseDir)
+                .then(lintStatus => {
+                    if (lintStatus.success) {
+                        return { ...soFar, happy: true };
+                    } else {
+                        return { ...soFar, happy: false, problems: findComplaints(push, soFar.project.baseDir, lintStatus.errorOutput) };
+                    }
+                });
+        } else {
+            return Promise.resolve(soFar);
+        }
+    });
+    const didItChange: Promise<Partial<Analysis>> = soLintIt.then(soFar =>
+        soFar.project.gitStatus()
+            .then(status => {
+                return ({ ...soFar, changed: !status.isClean, status });
+            }));
+    const letsPushIt: Promise<Analysis> = didItChange.then(soFar => {
+        if (soFar.changed && soFar.happy) {
+            if (soFar.personWantsMyHelp) {
+                return soFar.project.commit(CommitMessage)
+                    .then(() => soFar.project.push())
+                    .then(() => ({ ...soFar, pushed: true, offered: false } as Analysis))
+                    .catch(error => ({ ...soFar, pushed: false, offered: false, error } as Analysis));
+            } else {
+                if (shouldOfferToHelp(soFar.author)) {
+                    return offerToHelp(ctx).then(() => ({ ...soFar, pushed: false, offered: true } as Analysis));
+                }
+            }
+        } else {
+            return Promise.resolve({ ...soFar, pushed: false, offered: false } as Analysis);
+        }
+    });
+
+    return letsPushIt
+        .then(analysis => sendNotification(params.githubToken, ctx, push, analysis))
+        .catch(error => reportError(ctx, push, error));
 }
 
 function sendNotification(token: string, ctx: HandlerContext, push: graphql.PushToTsLinting.Push,
