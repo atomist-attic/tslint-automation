@@ -264,6 +264,7 @@ interface Location {
     readonly lineFrom1: number;
     readonly columnFrom1: number;
     readonly description: string;
+    readonly formerDescription: string;
 }
 
 function locate(baseDir: string, tsError: string): Location | undefined {
@@ -272,11 +273,18 @@ function locate(baseDir: string, tsError: string): Location | undefined {
     if (!match) {
         return undefined;
     }
+    const formerDescription = match[0];
+    const filePath = match[1];
+    const lineFrom1 = +match[2];
+    const columnFrom1 = +match[3];
+    const updatedPath = path.relative(baseDir, filePath);
+    const description = formerDescription.replace(baseDir, "");
     return {
-        path: path.relative(baseDir, match[1]),
-        lineFrom1: +match[2],
-        columnFrom1: +match[3],
-        description: match[0],
+        path: updatedPath,
+        lineFrom1,
+        columnFrom1,
+        description,
+        formerDescription: match[0],
     };
 }
 
@@ -285,7 +293,7 @@ function addLinkToProblem(push: graphql.PushToTsLinting.Push, baseDir: string, t
     if (!location) {
         return tsError;
     }
-    return tsError.replace(location.description, linkToLine(push, location));
+    return tsError.replace(location.formerDescription, linkToLine(push, location));
 }
 
 function problemsToAttachments(token: string, push: graphql.PushToTsLinting.Push, problems?: Problem[]): Promise<slack.Attachment[]> {

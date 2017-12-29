@@ -54,6 +54,7 @@ interface Analysis {
 
 @CommandHandler("Stop offering to help the invoking user", "stop offering to help with linting errors")
 export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
+
     public handle(context: HandlerContext, parameters: StopBotheringMeParams): Promise<HandlerResult> {
         const messageId = "stop-bothering-" + parameters.screenName;
         const reportError = reportErrorFunction(context, parameters);
@@ -68,9 +69,9 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
 [atomist:${messageId}]`)
                                     .then(() => project.push(), reportError("commit failed"))
                                     .then(() => project.gitStatus(), reportError("push failed"))
-                                    .then((gs: GitStatus) => reportProgress(context, messageId, { sha: gs.sha }),
-                                        reportError("git status failed"))
-                                    .then(() => ({ pushed: true, editResult, messageId }));
+                                    .then((gs: GitStatus) => reportProgress(context, messageId, { sha: gs.sha })
+                                            .then(() => ({ pushed: true, editResult, messageId, sha: gs.sha })),
+                                        reportError("git status failed"));
                             } else {
                                 return Promise.resolve({ pushed: false, editResult, messageId });
                             }
@@ -117,7 +118,7 @@ function reportErrorFunction(context: HandlerContext, parameters: StopBotheringM
             fallback: "report",
             color: "#bb2510",
             fields: fields(["message"], ["error"],
-                {  error, message }),
+                { error, message }),
         };
         const slackMessage: slack.SlackMessage = {
             text: `${parameters.screenName} invoked StopBotheringMe.`,
@@ -134,8 +135,10 @@ function finalReport(context: HandlerContext, parameters: StopBotheringMeParams,
         fallback: "report",
         color: "#20aa00",
         fields: fields(["edited", "messageId"], ["commit"],
-            {  ...analysis, commit: linkToCommit(analysis),
-                edited: analysis.editResult.edited}),
+            {
+                ...analysis, commit: linkToCommit(analysis),
+                edited: analysis.editResult.edited,
+            }),
     };
     const message: slack.SlackMessage = {
         text: `${parameters.screenName} invoked StopBotheringMe.`,
