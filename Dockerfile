@@ -3,10 +3,16 @@ FROM node:8
 ENV NPM_CONFIG_LOGLEVEL warn
 
 # I need gcloud to deploy to GKE
-RUN curl -sSL https://sdk.cloud.google.com | bash
-RUN gcloud auth activate-service-account --key-file linting-automation-48eb46756ce2.json
+RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcl && bash /tmp/gcl --install-dir=/gcloud
+RUN echo $(ls /gcloud/google-cloud-sdk/bin)
+ENV PATH $PATH:/gcloud/google-cloud-sdk/bin
+COPY linting-automation-48eb46756ce2.json /tmp/key.json
+RUN gcloud auth activate-service-account --key-file /tmp/key.json
 # travis will have decrypted this nice file. Do not put it in the docker image.
-RUN rm linting-automation-48eb46756ce2.json
+RUN rm /tmp/key.json
+
+RUN gcloud --quiet components install kubectl
+
 
 # Create app directory
 RUN mkdir -p /app
@@ -18,6 +24,7 @@ RUN npm install
 
 # Bundle app source
 COPY . /app
+RUN rm -f linting-automation-48eb46756ce2.json
 
 RUN  git config --global user.email "bot@atomist.com"
 RUN  git config --global user.name "Atomist Bot"
