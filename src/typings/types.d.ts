@@ -178,3 +178,34 @@ export namespace PushToTsLinting {
     owner?: string | null; 
   } 
 }
+export namespace SuccessfulBuild {
+  export type Variables = {
+  }
+
+  export type Subscription = {
+    Build?: Build[] | null; 
+  } 
+
+  export type Build = {
+    buildId?: string | null; 
+    buildUrl?: string | null; 
+    name?: string | null; 
+    repo?: Repo | null; 
+    push?: Push | null; 
+    commit?: Commit | null; 
+  } 
+
+  export type Repo = {
+    owner?: string | null; 
+    name?: string | null; 
+  } 
+
+  export type Push = {
+    branch?: string | null; 
+  } 
+
+  export type Commit = {
+    message?: string | null; 
+    sha?: string | null; 
+  } 
+}

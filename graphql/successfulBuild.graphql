@@ -1,0 +1,18 @@
+subscription SuccessfulBuild {
+    Build(status: passed, trigger: push) {
+        buildId
+        buildUrl
+        name
+        repo {
+            owner
+            name
+        }
+        push {
+            branch
+        }
+        commit {
+            message
+            sha
+        }
+    }
+}
