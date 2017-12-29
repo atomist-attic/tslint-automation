@@ -4,6 +4,9 @@ ENV NPM_CONFIG_LOGLEVEL warn
 
 # I need gcloud to deploy to GKE
 RUN curl -sSL https://sdk.cloud.google.com | bash
+RUN gcloud auth activate-service-account --key-file linting-automation-48eb46756ce2.json
+# travis will have decrypted this nice file. Do not put it in the docker image.
+RUN rm linting-automation-48eb46756ce2.json
 
 # Create app directory
 RUN mkdir -p /app
