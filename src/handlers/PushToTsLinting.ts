@@ -245,7 +245,7 @@ function sendNotification(project: Project, ctx: HandlerContext, push: Details,
 
     function reportToMe(notification: string) {
         const details: slack.SlackMessage = {
-            text: `${analysis.author} made ${linkToCommit(WhereToLink.fromDetails(push, analysis.commit.sha))} to ${push.branch}`,
+            text: `Linted for ${analysis.author} on ${linkToCommit(WhereToLink.fromDetails(push, analysis.commit.sha))}, branch ${push.branch}`,
             attachments: [
                 {
                     fallback: "did stuff",
@@ -448,6 +448,7 @@ function problemToAttachment(project: Project, push: WhereToLink, problem: Probl
             return output;
         });
     } else {
+        logger.info("Recognized error? " + !!problem.recognizedError + " problem.location? " + !!problem.location);
         return Promise.resolve(output);
     }
 
@@ -465,7 +466,7 @@ class RecognizedError {
 
     private static defaultOptions = {
         color: "#888888",
-        usefulToShowLine: false,
+        usefulToShowLine: true,
     };
 
     public color: string;
