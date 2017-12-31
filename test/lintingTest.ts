@@ -10,10 +10,10 @@ const GitHubCredentials = { token: process.env.GITHUB_TOKEN };
 describe("can we lint the thing?", () => {
 
     it("can lint a thing", done => {
-        GitCommandGitProject.cloned(GitHubCredentials, new GitHubRepoRef("atomist", "automation-client-ts"))
+        GitCommandGitProject.cloned(GitHubCredentials, new GitHubRepoRef("atomist", "upgrade-client-automation"))
             .then(project => runTslint(project))
             .then(result => {
-                assert(result.success);
+                assert(!result.success);
                 console.log(stringify(result));
             })
             .then(() => done(), done);

@@ -25,11 +25,11 @@ import * as path from "path";
 import { Options, run } from "tslint/lib/runner";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
-import { getFileContentFromProject } from "../util/getFileContent";
 import { ProjectOperationCredentials } from "@atomist/automation-client/operations/common/ProjectOperationCredentials";
 import { GitHubTargetsParams } from "@atomist/automation-client/operations/common/params/GitHubTargetsParams";
 import { Project } from "@atomist/automation-client/project/Project";
 import { GitBranchRegExp } from "@atomist/automation-client/operations/common/params/gitHubPatterns";
+import { getFileContentFromProject } from "../util/getFileContent";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "jessica", "jessica", "the-grinch"];
@@ -389,36 +389,24 @@ interface Location {
     readonly lineFrom1: number;
     readonly columnFrom1: number;
     readonly description: string;
-    readonly formerDescription: string;
 }
 
-function locate(baseDir: string, tsError: string): Location | undefined {
-    const pathAndLine = /([^\s]+)\[(\d+), (\d+)\]/;
-    const match = tsError.match(pathAndLine);
-    if (!match) {
-        return undefined;
-    }
-    const formerDescription = match[0];
-    const filePath = match[1];
-    const lineFrom1 = +match[2];
-    const columnFrom1 = +match[3];
-    const updatedPath = path.relative(baseDir, filePath);
-    const description = formerDescription.replace(baseDir, "");
+function locate(baseDir: string, tsError: RuleFailure): Location | undefined {
+
+    const lineFrom1 = tsError.startPosition.line + 1;
+    const columnFrom1 = tsError.startPosition.character + 1;
+    const updatedPath = path.relative(baseDir, tsError.name);
     return {
         path: updatedPath,
         lineFrom1,
         columnFrom1,
-        description,
-        formerDescription: match[0],
+        description: `${updatedPath} [${lineFrom1}, ${columnFrom1}]`,
     };
 }
 
-function addLinkToProblem(push: WhereToLink, baseDir: string, tsError: string): string {
+function problemToText(push: WhereToLink, baseDir: string, tsError: RuleFailure): string {
     const location = locate(baseDir, tsError);
-    if (!location) {
-        return tsError;
-    }
-    return tsError.replace(location.formerDescription, linkToLine(push, location));
+    return `${tsError.ruleSeverity}: (${tsError.ruleSeverity}) ${linkToLine(push, location)}: ${tsError.failure}`;
 }
 
 function problemsToAttachments(project: Project, push: WhereToLink, problems?: Problem[]): Promise<slack.Attachment[]> {
@@ -429,7 +417,7 @@ function problemsToAttachments(project: Project, push: WhereToLink, problems?: P
 }
 
 function problemToAttachment(project: Project, push: WhereToLink, problem: Problem): Promise<slack.Attachment> {
-    const output: slack.Attachment = { fallback: "problem" };
+    const output: slack.Attachment = { fallback: "problem", mrkdwn_in: ["text"] };
 
     if (problem.location) {
         output.author_name = problem.location.description;
@@ -444,7 +432,7 @@ function problemToAttachment(project: Project, push: WhereToLink, problem: Probl
 
     if (problem.recognizedError && problem.location && problem.recognizedError.usefulToShowLine) {
         return getFileContentFromProject(project, problem.location.path).then(content => {
-            output.text = "`" + getLine(content, problem.location.lineFrom1) + "`";
+            output.text = "`" + getLine(content, problem.location.lineFrom1).trim() + "`";
             return output;
         });
     } else {
@@ -472,8 +460,15 @@ class RecognizedError {
     public color: string;
     public usefulToShowLine: boolean;
 
-    constructor(public name: string,
-                public description: string,
+    get name(): string {
+        return this.ruleFailure.ruleName;
+    };
+
+    get description(): string {
+        return this.ruleFailure.failure;
+    };
+
+    constructor(private ruleFailure: RuleFailure,
                 opts?: { color?: string, usefulToShowLine?: boolean }) {
         const fullOpts = {
             ...RecognizedError.defaultOptions,
@@ -488,52 +483,60 @@ class CommentFormatError extends RecognizedError {
 
     public static Name = "comment-format";
 
-    public static recognize(name: string, description: string): CommentFormatError | null {
-        if (name === this.Name) {
-            return new CommentFormatError(description);
+    public static recognize(tsError: RuleFailure): CommentFormatError | null {
+        if (tsError.ruleName === this.Name) {
+            return new CommentFormatError(tsError);
         }
         return null;
     }
 
-    constructor(description: string) {
-        super(CommentFormatError.Name, description,
-            { color: "#d84010", usefulToShowLine: true });
+    constructor(tsError: RuleFailure) {
+        super(tsError,
+            { color: "#6020a0", usefulToShowLine: true });
     }
 }
 
-function recognizeError(tsError: string): RecognizedError {
-    // ERROR: (comment-format) test/passContextToClone/editorTest.ts[986, 15]: comment must start with a space
-    const pathAndLine = /ERROR: \(([a-z-]+)\).*: (.*)$/;
-    const match = tsError.match(pathAndLine);
-    if (!match) {
-        return undefined;
-    }
-
-    const name = match[1];
-    const description = match[2];
-
-    return CommentFormatError.recognize(name, description) || new RecognizedError(name, description);
+function recognizeError(tsError: RuleFailure): RecognizedError {
+    return CommentFormatError.recognize(tsError) || new RecognizedError(tsError);
 }
 
-function findComplaints(push: WhereToLink, baseDir: string, tslintOutput: string): Problem[] {
+function findComplaints(push: WhereToLink, baseDir: string, tslintOutput: RuleFailure[]): Problem[] {
     if (!tslintOutput) {
         return undefined;
     }
     return tslintOutput
-        .split("\n")
-        .filter(s => s.match(/^ERROR: /))
-        .map(p => ({
-            text: addLinkToProblem(push, baseDir, p),
+        .map((p: RuleFailure) => ({
+            text: problemToText(push, baseDir, p),
             location: locate(baseDir, p),
             recognizedError: recognizeError(p),
         }));
 }
 
+
 export function runTslint(project: GitProject) {
+
+
+    // const configurationFilename = project.baseDir + "/tsconfig.json";
+    // const configuration = Configuration.findConfiguration(configurationFilename).results;
+    // const options: ILinterOptions = {
+    //     fix: true,
+    //     formatter: "json",
+    // };
+    // return doWithFiles(project, "**/*.ts", f => f.getContent().then(fileContents => {
+    //     if (!f.path.startsWith("node_modules") && !f.path.startsWith("build")) {
+    //         const linter = new Linter(options);
+    //         linter.lint(project.baseDir + "/" + f.path, fileContents, configuration);
+    //         const result = linter.getResult();
+    //         result.failures.forEach(fail => fail.getRawLines())
+    //     }
+    // })).then();
+
     const options: Options = {
         exclude: ["node_modules/**", "build/**"],
         fix: true,
         project: project.baseDir,
+        format: "json",
+        outputAbsolutePaths: false,
     };
     const errors: string[] = [];
     const logs: string[] = [];
@@ -550,6 +553,15 @@ export function runTslint(project: GitProject) {
     return run(options, loggo).then(status => {
         console.log("returned from run");
         // I don't know why Status.Ok NPEs in mocha at the command line. It works in IntelliJ
-        return { success: status === 0 /* Status.Ok */, errorOutput: logs.join("\n") };
+        return { success: status === 0 /* Status.Ok */, errorOutput: JSON.parse(logs.join("\n")) as RuleFailure[] };
     });
+}
+
+export interface RuleFailure {
+    endPosition: { character: number, line: number },
+    startPosition: { character: number, line: number },
+    failure: string,
+    name: string,
+    ruleName: string,
+    ruleSeverity: string
 }
