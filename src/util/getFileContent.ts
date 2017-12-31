@@ -1,6 +1,7 @@
 import { api } from "./gitHubApi";
+import { Project } from "@atomist/automation-client/project/Project";
 
-export function getFileContent(token: string,
+export function getFileContentFromGithub(token: string,
                                repo: { name: string, owner: string, ref: string },
                                filePath: string): Promise<string> {
 
@@ -17,3 +18,10 @@ export function getFileContent(token: string,
         return Promise.resolve(unencoded);
     });
 }
+
+export function getFileContentFromProject(project: Project,
+                               filePath: string): Promise<string> {
+
+    return project.findFile(filePath).then(f => f.getContent());
+}
+

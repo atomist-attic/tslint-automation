@@ -1,5 +1,16 @@
-import { EventFired, HandleEvent, HandlerContext, HandlerResult, Secrets } from "@atomist/automation-client";
-import { EventHandler, Secret } from "@atomist/automation-client/decorators";
+import {
+    CommandHandler,
+    EventFired,
+    HandleCommand,
+    HandleEvent,
+    HandlerContext,
+    HandlerResult,
+    MappedParameter,
+    MappedParameters,
+    Parameter,
+    Secrets,
+} from "@atomist/automation-client";
+import { EventHandler, Parameters, Secret } from "@atomist/automation-client/decorators";
 import * as GraphQL from "@atomist/automation-client/graph/graphQL";
 import { logger } from "@atomist/automation-client/internal/util/logger";
 import { GitHubRepoRef } from "@atomist/automation-client/operations/common/GitHubRepoRef";
@@ -11,11 +22,14 @@ import { exec } from "child-process-promise";
 import * as stringify from "json-stringify-safe";
 import * as _ from "lodash";
 import * as path from "path";
-import { Options, run, Status } from "tslint/lib/runner";
+import { Options, run } from "tslint/lib/runner";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
-import { getFileContent } from "../util/getFileContent";
+import { getFileContentFromProject } from "../util/getFileContent";
 import { ProjectOperationCredentials } from "@atomist/automation-client/operations/common/ProjectOperationCredentials";
+import { GitHubTargetsParams } from "@atomist/automation-client/operations/common/params/GitHubTargetsParams";
+import { Project } from "@atomist/automation-client/project/Project";
+import { GitBranchRegExp } from "@atomist/automation-client/operations/common/params/gitHubPatterns";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "jessica", "jessica", "the-grinch"];
@@ -34,6 +48,7 @@ interface Analysis {
     pushed: boolean;
     error?: Error;
     problems?: Problem[];
+    commit: { sha: string }
 }
 
 function stringifyAnalysis(a: Analysis): string {
@@ -79,24 +94,75 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
                   ctx: HandlerContext, params: this): Promise<HandlerResult> {
         const push = event.data.Push[0];
 
-        const details : Details = {
+
+        const details: Details = {
             ...push,
             commit: push.after,
         } as Details;
 
+
+        if (skipThisCommitEntirely(push.after.message)) {
+            return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(WhereToLink.fromPush(push))}`, me);
+        }
+
         const author: string = _.get(push, "after.author.person.chatId.screenName") ||
             _.get(push, "after.author.login") || "unknown";
+
+        initialReportEvent(ctx, push, author);
+
 
         return handleTsLint(ctx, { token: params.githubToken }, details, author)
 
     }
 }
 
+/**
+ * Get target from channel mapping
+ */
+@Parameters()
+export class BranchInRepoParameters extends GitHubTargetsParams {
+
+    @MappedParameter(MappedParameters.GitHubOwner)
+    public owner: string;
+
+    @MappedParameter(MappedParameters.GitHubRepository)
+    public repo: string;
+
+    @Parameter({ description: "Branch. Defaults to 'master'", ...GitBranchRegExp, required: false })
+    public branch: string;
+
+    public sha = {
+        get() {
+            return this.branch;
+        },
+    }
+
+    @MappedParameter(MappedParameters.SlackUserName)
+    public screenName: string;
+
+}
+
+@CommandHandler("Run tslint on a branch and make a commit", "lint for me")
+export class PleaseLint implements HandleCommand<BranchInRepoParameters> {
+
+    public freshParametersInstance() {
+        return new BranchInRepoParameters()
+    }
+
+    public handle(context: HandlerContext, params: BranchInRepoParameters): Promise<HandlerResult> {
+        const detail: Details = {
+            branch: params.branch || "master",
+            repo: { owner: params.owner, name: params.repo },
+        };
+
+        initialReportCommand(context, detail, params.screenName);
+
+        return handleTsLint(context, params.credentials, detail, params.screenName);
+    }
+
+}
+
 interface Details {
-    commit: {
-        message: string,
-        sha: string,
-    },
     branch: string,
     repo: {
         owner: string,
@@ -107,12 +173,8 @@ interface Details {
 function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
                       details: Details, author: string) {
 
-    if (skipThisCommitEntirely(details.commit.message)) {
-        return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(details)}`, me);
-    }
-    const personCares: boolean = lintingIsWanted(false, author);
 
-    initialReport(ctx, details, author);
+    const personCares: boolean = lintingIsWanted(false, author);
 
     // end debugging
 
@@ -127,14 +189,22 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
             return { ...startAnalysis, project, lintable: false };
         }
     });
-    const soLintIt: Promise<Partial<Analysis>> = isItLintable.then(soFar => {
+    const populateTheSha: Promise<Partial<Analysis>> = isItLintable
+        .then(analysis => analysis.project.gitStatus()
+            .then(gitStatus => ({ ...analysis, commit: { sha: gitStatus.sha } })));
+    const soLintIt: Promise<Partial<Analysis>> = populateTheSha.then(soFar => {
         if (soFar.lintable) {
             return runTslint(soFar.project.baseDir)
                 .then(lintStatus => {
                     if (lintStatus.success) {
                         return { ...soFar, happy: true };
                     } else {
-                        return { ...soFar, happy: false, problems: findComplaints(details, soFar.project.baseDir, lintStatus.errorOutput) };
+                        return {
+                            ...soFar,
+                            happy: false,
+                            problems: findComplaints(WhereToLink.fromDetails(details, soFar.commit.sha),
+                                soFar.project.baseDir, lintStatus.errorOutput),
+                        };
                     }
                 });
         } else {
@@ -164,18 +234,18 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
     });
 
     return letsPushIt
-        .then(analysis => sendNotification(creds.token, ctx, details, analysis))
+        .then(analysis => sendNotification(analysis.project, ctx, details, analysis))
         .catch(error => reportError(ctx, details, error));
 }
 
-function sendNotification(token: string, ctx: HandlerContext, push: Details,
+function sendNotification(project: Project, ctx: HandlerContext, push: Details,
                           analysis: Analysis): Promise<any> {
 
     const whoami = `${configuration.name}:${configuration.version}`;
 
     function reportToMe(notification: string) {
         const details: slack.SlackMessage = {
-            text: `${analysis.author} made ${linkToCommit(push)} to ${push.branch}`,
+            text: `${analysis.author} made ${linkToCommit(WhereToLink.fromDetails(push, analysis.commit.sha))} to ${push.branch}`,
             attachments: [
                 {
                     fallback: "did stuff",
@@ -197,7 +267,7 @@ function sendNotification(token: string, ctx: HandlerContext, push: Details,
     if (analysis.pushed && analysis.happy) {
         // we are so useful
         return ctx.messageClient.addressUsers(
-            `Hey, I fixed some linting errors on your commit ${linkToCommit(push)}. Please pull.`,
+            `Hey, I fixed some linting errors on your commit ${linkToCommit(WhereToLink.fromDetails(push, analysis.commit.sha))}. Please pull.`,
             analysis.author)
             .then(() => reportToMe("I told them they should pull"));
     }
@@ -209,12 +279,12 @@ function sendNotification(token: string, ctx: HandlerContext, push: Details,
     }
     if (!analysis.pushed && !analysis.happy) {
 
-        return problemsToAttachments(token, push, analysis.problems)
+        return problemsToAttachments(project, WhereToLink.fromDetails(push, analysis.commit.sha), analysis.problems)
             .then(attachments =>
                 ctx.messageClient.addressUsers({
                         text:
                             `Bad news: there are some tricky linting errors on ${
-                                linkToCommit(push, "your commit")} to ${push.repo.name}#${push.branch}.`,
+                                linkToCommit(WhereToLink.fromDetails(push, analysis.commit.sha), "your commit")} to ${push.repo.name}#${push.branch}.`,
                         attachments,
                     },
                     analysis.author))
@@ -246,29 +316,59 @@ function fields(shortOnes: string[], longOnes: string[], source: object) {
     return shorts.concat(longs);
 }
 
-function initialReport(ctx: HandlerContext, push: Details, author: string) {
+function initialReportEvent(ctx: HandlerContext, push: graphql.PushToTsLinting.Push, author: string) {
     const whoami = `${configuration.name}:${configuration.version}`;
 
     ctx.messageClient.addressUsers(
-        `${whoami}: ${author} made ${linkToCommit(push)}, message \`${push.commit.message}\`. Linting`, me,
+        `${whoami}: ${author} made ${linkToCommit(WhereToLink.fromPush(push))}, message \`${push.after.message}\`. Linting`, me,
         { id: ctx.correlationId, ts: 1 });
 }
 
-function reportError(ctx: HandlerContext, push: Details, error: Error) {
-    ctx.messageClient.addressUsers(`Uncaught error while linting ${linkToCommit(push)}: ` + error, me);
+function initialReportCommand(ctx: HandlerContext, details: Details, author: string) {
+    const whoami = `${configuration.name}:${configuration.version}`;
+
+    return ctx.messageClient.addressUsers(
+        `${whoami}: ${author} requested linting on ${linkToBranch(details)}. Linting`, me,
+        { id: ctx.correlationId, ts: 1 });
 }
 
-function linkToCommit(push: Details, text: string = `commit on ${push.repo.name}#${push.branch}`) {
+function reportError(ctx: HandlerContext, details: Details, error: Error) {
+    ctx.messageClient.addressUsers(`Uncaught error while linting ${linkToBranch(details)}: ` + error, me);
+}
+
+class WhereToLink {
+    constructor(public readonly owner: string,
+                public readonly repo: string,
+                public readonly branch: string,
+                public readonly sha: string) {
+    }
+
+    public static fromPush(push: graphql.PushToTsLinting.Push): WhereToLink {
+        return new WhereToLink(push.repo.owner, push.repo.name, push.branch, push.after.sha)
+    }
+
+    public static fromDetails(details: Details, sha: string): WhereToLink {
+        return new WhereToLink(details.repo.owner, details.repo.name, details.branch, sha)
+    }
+}
+
+function linkToCommit(where: WhereToLink, text: string = `commit on ${where.repo}#${where.branch}`) {
     return slack.url(
-        `https://github.com/${push.repo.owner}/${push.repo.name}/commit/${push.commit.sha}`,
+        `https://github.com/${where.owner}/${where.repo}/commit/${where.sha}`,
         text);
 }
 
-function urlToLine(push: Details, location: Location) {
-    return `https://github.com/${push.repo.owner}/${push.repo.name}/blob/${push.commit.sha}/${location.path}#L${location.lineFrom1}`;
+function linkToBranch(details: Details) {
+    return slack.url(
+        `https://github.com/${details.repo.owner}/${details.repo.name}/tree/${details.branch}`,
+        `${details.repo.name}#${details.branch}`)
 }
 
-function linkToLine(push: Details, location: Location) {
+function urlToLine(push: WhereToLink, location: Location) {
+    return `https://github.com/${push.owner}/${push.repo}/blob/${push.sha}/${location.path}#L${location.lineFrom1}`;
+}
+
+function linkToLine(push: WhereToLink, location: Location) {
     return slack.url(
         urlToLine(push, location),
         location.description);
@@ -313,7 +413,7 @@ function locate(baseDir: string, tsError: string): Location | undefined {
     };
 }
 
-function addLinkToProblem(push: Details, baseDir: string, tsError: string): string {
+function addLinkToProblem(push: WhereToLink, baseDir: string, tsError: string): string {
     const location = locate(baseDir, tsError);
     if (!location) {
         return tsError;
@@ -321,14 +421,14 @@ function addLinkToProblem(push: Details, baseDir: string, tsError: string): stri
     return tsError.replace(location.formerDescription, linkToLine(push, location));
 }
 
-function problemsToAttachments(token: string, push: Details, problems?: Problem[]): Promise<slack.Attachment[]> {
+function problemsToAttachments(project: Project, push: WhereToLink, problems?: Problem[]): Promise<slack.Attachment[]> {
     if (!problems) {
         return Promise.resolve([]);
     }
-    return Promise.all(problems.map(p => problemToAttachment(token, push, p)));
+    return Promise.all(problems.map(p => problemToAttachment(project, push, p)));
 }
 
-function problemToAttachment(token: string, push: Details, problem: Problem): Promise<slack.Attachment> {
+function problemToAttachment(project: Project, push: WhereToLink, problem: Problem): Promise<slack.Attachment> {
     const output: slack.Attachment = { fallback: "problem" };
 
     if (problem.location) {
@@ -343,8 +443,7 @@ function problemToAttachment(token: string, push: Details, problem: Problem): Pr
     }
 
     if (problem.recognizedError && problem.location && problem.recognizedError.usefulToShowLine) {
-        const where = { name: push.repo.name, owner: push.repo.owner, ref: push.commit.sha };
-        return getFileContent(token, where, problem.location.path).then(content => {
+        return getFileContentFromProject(project, problem.location.path).then(content => {
             output.text = "`" + getLine(content, problem.location.lineFrom1) + "`";
             return output;
         });
@@ -415,7 +514,7 @@ function recognizeError(tsError: string): RecognizedError {
     return CommentFormatError.recognize(name, description) || new RecognizedError(name, description);
 }
 
-function findComplaints(push: Details, baseDir: string, tslintOutput: string): Problem[] {
+function findComplaints(push: WhereToLink, baseDir: string, tslintOutput: string): Problem[] {
     if (!tslintOutput) {
         return undefined;
     }

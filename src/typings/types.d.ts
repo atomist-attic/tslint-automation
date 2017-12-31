@@ -60,7 +60,7 @@ export type _CommitOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "sha_asc" | "
 export type BuildStatus = "passed" | "broken" | "failed" | "started" | "canceled";
 
 /* Enum for BuildTrigger */
-export type BuildTrigger = "pull_request" | "push" | "tag";
+export type BuildTrigger = "pull_request" | "push" | "tag" | "cron";
 
 /* Ordering Enum for Build */
 export type _BuildOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "id_asc" | "id_desc" | "buildId_asc" | "buildId_desc" | "name_asc" | "name_desc" | "status_asc" | "status_desc" | "buildUrl_asc" | "buildUrl_desc" | "compareUrl_asc" | "compareUrl_desc" | "trigger_asc" | "trigger_desc" | "provider_asc" | "provider_desc" | "pullRequestNumber_asc" | "pullRequestNumber_desc" | "startedAt_asc" | "startedAt_desc" | "finishedAt_asc" | "finishedAt_desc" | "timestamp_asc" | "timestamp_desc" | "workflowId_asc" | "workflowId_desc" | "jobName_asc" | "jobName_desc" | "jobId_asc" | "jobId_desc";
@@ -114,7 +114,7 @@ export type _FingerprintOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "name_as
 export type _ParentImpactOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "id_asc" | "id_desc" | "url_asc" | "url_desc" | "data_asc" | "data_desc";
 
 /* Ordering Enum for Branch */
-export type _BranchOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "id_asc" | "id_desc" | "name_asc" | "name_desc" | "deleted_asc" | "deleted_desc" | "timestamp_asc" | "timestamp_desc";
+export type _BranchOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "id_asc" | "id_desc" | "name_asc" | "name_desc" | "timestamp_asc" | "timestamp_desc";
 
 /* Enum for ReviewState */
 export type ReviewState = "requested" | "pending" | "approved" | "commented" | "changes_requested";
@@ -127,6 +127,9 @@ export type CommentCommentType = "review" | "pullRequest" | "issue";
 
 /* Ordering Enum for Comment */
 export type _CommentOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "id_asc" | "id_desc" | "body_asc" | "body_desc" | "timestamp_asc" | "timestamp_desc" | "gitHubId_asc" | "gitHubId_desc" | "path_asc" | "path_desc" | "position_asc" | "position_desc" | "htmlUrl_asc" | "htmlUrl_desc" | "commentType_asc" | "commentType_desc";
+
+/* Ordering Enum for DeletedBranch */
+export type _DeletedBranchOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "id_asc" | "id_desc" | "name_asc" | "name_desc" | "timestamp_asc" | "timestamp_desc";
 
 /* Ordering Enum for K8Cluster */
 export type _K8ClusterOrdering = "atmTeamId_asc" | "atmTeamId_desc" | "name_asc" | "name_desc" | "availabilityZone_asc" | "availabilityZone_desc";

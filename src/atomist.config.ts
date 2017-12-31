@@ -3,7 +3,7 @@ import { Configuration } from "@atomist/automation-client/configuration";
 import * as appRoot from "app-root-path";
 import * as cfenv from "cfenv";
 import { HelloWorld } from "./handlers/HelloWorld";
-import { PushToTsLinting } from "./handlers/PushToTsLinting";
+import { PleaseLint, PushToTsLinting } from "./handlers/PushToTsLinting";
 import { StopBotheringMe } from "./handlers/SelfConfigurate";
 import { DeployAfterSuccessfulBuild } from "./handlers/DeploySelf";
 import { UpdateMessageOnBuild } from "./handlers/UpdateMessageOnBuild";
@@ -40,6 +40,7 @@ export const configuration: Configuration = {
     commands: [
         HelloWorld,
         StopBotheringMe,
+        PleaseLint,
     ],
     events: [
         () => new PushToTsLinting(),
