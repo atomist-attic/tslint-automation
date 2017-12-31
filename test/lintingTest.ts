@@ -11,7 +11,7 @@ describe("can we lint the thing?", () => {
 
     it("can lint a thing", done => {
         GitCommandGitProject.cloned(GitHubCredentials, new GitHubRepoRef("atomist", "automation-client-ts"))
-            .then(project => runTslint(project.baseDir))
+            .then(project => runTslint(project))
             .then(result => {
                 assert(result.success);
                 console.log(stringify(result));

@@ -194,7 +194,7 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
             .then(gitStatus => ({ ...analysis, commit: { sha: gitStatus.sha } })));
     const soLintIt: Promise<Partial<Analysis>> = populateTheSha.then(soFar => {
         if (soFar.lintable) {
-            return runTslint(soFar.project.baseDir)
+            return runTslint(soFar.project)
                 .then(lintStatus => {
                     if (lintStatus.success) {
                         return { ...soFar, happy: true };
@@ -529,11 +529,11 @@ function findComplaints(push: WhereToLink, baseDir: string, tslintOutput: string
         }));
 }
 
-export function runTslint(baseDir) {
+export function runTslint(project: GitProject) {
     const options: Options = {
         exclude: ["node_modules/**", "build/**"],
         fix: true,
-        project: baseDir,
+        project: project.baseDir,
     };
     const errors: string[] = [];
     const logs: string[] = [];
