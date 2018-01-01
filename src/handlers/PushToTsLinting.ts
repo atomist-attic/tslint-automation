@@ -1,16 +1,5 @@
-import {
-    CommandHandler,
-    EventFired,
-    HandleCommand,
-    HandleEvent,
-    HandlerContext,
-    HandlerResult,
-    MappedParameter,
-    MappedParameters,
-    Parameter,
-    Secrets,
-} from "@atomist/automation-client";
-import { EventHandler, Parameters, Secret } from "@atomist/automation-client/decorators";
+import { CommandHandler, EventFired, HandleCommand, HandleEvent, HandlerContext, HandlerResult, Secrets, } from "@atomist/automation-client";
+import { EventHandler, Secret } from "@atomist/automation-client/decorators";
 import * as GraphQL from "@atomist/automation-client/graph/graphQL";
 import { logger } from "@atomist/automation-client/internal/util/logger";
 import { GitHubRepoRef } from "@atomist/automation-client/operations/common/GitHubRepoRef";
@@ -26,10 +15,9 @@ import { Options, run } from "tslint/lib/runner";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
 import { ProjectOperationCredentials } from "@atomist/automation-client/operations/common/ProjectOperationCredentials";
-import { GitHubTargetsParams } from "@atomist/automation-client/operations/common/params/GitHubTargetsParams";
 import { Project } from "@atomist/automation-client/project/Project";
-import { GitBranchRegExp } from "@atomist/automation-client/operations/common/params/gitHubPatterns";
 import { getFileContentFromProject } from "../util/getFileContent";
+import { BranchInRepoParameters } from "./BranchInRepoParameters";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "jessica", "jessica", "the-grinch"];
@@ -116,31 +104,6 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
     }
 }
 
-/**
- * Get target from channel mapping
- */
-@Parameters()
-export class BranchInRepoParameters extends GitHubTargetsParams {
-
-    @MappedParameter(MappedParameters.GitHubOwner)
-    public owner: string;
-
-    @MappedParameter(MappedParameters.GitHubRepository)
-    public repo: string;
-
-    @Parameter({ description: "Branch. Defaults to 'master'", ...GitBranchRegExp, required: false })
-    public branch: string;
-
-    public sha = {
-        get() {
-            return this.branch;
-        },
-    }
-
-    @MappedParameter(MappedParameters.SlackUserName)
-    public screenName: string;
-
-}
 
 @CommandHandler("Run tslint on a branch and make a commit", "lint for me")
 export class PleaseLint implements HandleCommand<BranchInRepoParameters> {
@@ -300,7 +263,13 @@ function offerToHelp(context: HandlerContext): Promise<void> {
 }
 
 function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachment {
+    const color = analysis.changed ?
+        (analysis.pushed ? "#22a703" :
+            "#aa1155") :
+        "#444444";
+
     return {
+        color,
         fallback: "analysis goes here",
         text: analysis.problems ? analysis.problems.map(formatProblem).join("\n") : "No problems",
         fields: fields(["author", "personWantsMyHelp", "lintable", "happy", "changed", "pushed"],
