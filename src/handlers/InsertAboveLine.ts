@@ -3,7 +3,7 @@ import { Project } from "@atomist/automation-client/project/Project";
 import { editorHandler } from "@atomist/automation-client/operations/edit/editorToCommand";
 import { Parameters } from "@atomist/automation-client/decorators";
 import { HandleCommand, Parameter } from "@atomist/automation-client";
-import { BranchInRepoParameters } from "./PushToTsLinting";
+import { BranchInRepoParameters } from "./BranchInRepoParameters";
 
 function insertAboveLine(path: string, lineFrom1: number, previousContent: string, insert: string): ProjectEditor {
     return (p: Project) =>
