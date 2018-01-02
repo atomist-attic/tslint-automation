@@ -6,9 +6,9 @@ import { DeployAfterSuccessfulBuild } from "./handlers/DeploySelf";
 import { HelloWorld } from "./handlers/HelloWorld";
 import { insertAboveLineCommand } from "./handlers/InsertAboveLine";
 import { PleaseLint, PushToTsLinting } from "./handlers/PushToTsLinting";
+import { replaceLineCommand } from "./handlers/ReplaceLine";
 import { StopBotheringMe } from "./handlers/SelfConfigurate";
 import { UpdateMessageOnBuild } from "./handlers/UpdateMessageOnBuild";
-import { replaceLineCommand } from "./handlers/ReplaceLine";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);

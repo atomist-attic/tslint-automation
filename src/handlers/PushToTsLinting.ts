@@ -42,16 +42,6 @@ interface Analysis extends Details {
     commit: { sha: string };
 }
 
-function stringifyAnalysis(a: Analysis): string {
-    return `personCares? ${a.personWantsMyHelp}
-lintable? ${a.lintable}
-happy?    ${a.happy}
-changed?  ${a.changed}
-pushed?   ${a.pushed}
-status:   ${stringify(a.status)}
-error: ${a.error}`;
-}
-
 function skipThisCommitEntirely(commitMessage: string): boolean {
     if (commitMessage === CommitMessage) {
         // haha, I made this commit
@@ -269,7 +259,6 @@ function identifyMessage(info: Details): MessageOptions {
 }
 
 function offerToHelp(context: HandlerContext, analysis: Analysis): Promise<void> {
-    const pleaseLintParameters: BranchInRepoParameters = new BranchInRepoParameters;
 
     const slackMessage: slack.SlackMessage = {
         text: `There are linting errors on your ${
@@ -279,16 +268,16 @@ function offerToHelp(context: HandlerContext, analysis: Analysis): Promise<void>
                 buttonForCommand({ text: "Fix it" },
                     "PleaseLint",
                     {
-                        branch: pleaseLintParameters.branch,
-                        repo: pleaseLintParameters.owner,
-                        owner: pleaseLintParameters.owner,
+                        branch: analysis.branch,
+                        repo: analysis.repo.name,
+                        owner: analysis.repo.owner,
                     }),
                 buttonForCommand({ text: "Never ask again" }, "StopBotheringMe"),
             ],
         }],
     };
     logger.info("I would offer to help if I knew how ...");
-    return context.messageClient.addressUsers(slackMessage, analysis.author);
+    return context.messageClient.addressUsers(slackMessage, analysis.author, identifyMessage(analysis));
 }
 
 function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachment {
@@ -432,8 +421,9 @@ function problemToAttachment(project: Project, details: Details, push: WhereToLi
     if (problem.recognizedError && problem.location && problem.recognizedError.usefulToShowLine) {
         return getFileContentFromProject(project, problem.location.path).then(content => {
             const lineContent = getLine(content, problem.location.lineFrom1);
-            output.text = "`" + lineContent.trim() + "`";
-            output.actions = [overrideButton(details, problem, lineContent)];
+            const fixInfo = problem.recognizedError.fix(details, problem.location, lineContent);
+            output.text = "`" + lineContent.trim() + "`" + "\n" + fixInfo.text;
+            output.actions = fixInfo.actions.concat([overrideButton(details, problem, lineContent)]);
             return output;
         });
     } else {
@@ -457,12 +447,12 @@ function overrideButton(details: Details, problem: Problem, offendingLine: strin
         {
             "targets.owner": parameters.targets.owner,
             "targets.repo": parameters.targets.repo,
+            "targets.branch": parameters.targets.branch,
             "message": parameters.message,
             "insert": parameters.insert,
             "previousContent": parameters.previousContent,
             "lineFrom1": parameters.lineFrom1,
             "path": parameters.path,
-            "targets.branch": parameters.targets.branch,
         });
 }
 
@@ -472,6 +462,11 @@ function getLine(content: string, lineFrom1: number) {
         return `## oops, there are only ${lines.length} lines. Unable to retrieve line ${lineFrom1}`;
     }
     return lines[lineFrom1 - 1];
+}
+
+export interface WhereToFix {
+    repo: { owner: string, name: string },
+    branch: string
 }
 
 class RecognizedError {
@@ -492,8 +487,8 @@ class RecognizedError {
         return this.ruleFailure.failure;
     }
 
-    public fix(previousContent: string): FixInfo | null {
-        return null;
+    public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
+        return { text: "", actions: [] };
     }
 
     constructor(private ruleFailure: RuleFailure,
@@ -508,8 +503,8 @@ class RecognizedError {
 }
 
 interface FixInfo {
-    text: string,
-    action: Action
+    text: string;
+    actions: Action[];
 }
 
 class CommentFormatError extends RecognizedError {
@@ -523,17 +518,26 @@ class CommentFormatError extends RecognizedError {
         return null;
     }
 
-    public fix(previousContent: string): FixInfo {
-        const singleLineCommentFix = previousContent.replace(/\/\/\S/, "// ");
+    // yeah ok I wish I had both previousContent and Location in the constructor instead
+    public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
+        const singleLineCommentFix = previousContent.replace(/\/\/(\S)/, "// $1");
         if (singleLineCommentFix !== previousContent) {
             return {
                 text: "Proposed fix: `" + singleLineCommentFix + "`",
-                action: buttonForCommand({ text: "Fix it" },
+                actions: [buttonForCommand({ text: "Fix it" },
                     "ReplaceLine", {
+                        "targets.owner": details.repo.owner,
+                        "targets.repo": details.repo.name,
+                        "targets.branch": details.branch,
                         previousContent,
-                        newContent: singleLineCommentFix,
-                    }),
-            }
+                        insert: singleLineCommentFix,
+                        lineFrom1: location.lineFrom1,
+                        message: "lint: comment format",
+                        path: location.path,
+                    })],
+            };
+        } else {
+            return super.fix(details, location, previousContent);
         }
     }
 
