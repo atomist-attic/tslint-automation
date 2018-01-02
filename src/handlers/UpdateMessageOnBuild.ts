@@ -1,9 +1,9 @@
 import { EventFired, EventHandler, HandleEvent, HandlerContext, HandlerResult, Success } from "@atomist/automation-client";
-import * as graphql from "../typings/types";
-import { adminSlackUserNames } from "../atomist.config";
 import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
-import * as _ from "lodash";
 import * as slack from "@atomist/slack-messages/SlackMessages";
+import * as _ from "lodash";
+import { adminSlackUserNames } from "../atomist.config";
+import * as graphql from "../typings/types";
 
 import * as stopBotheringMe from "./SelfConfigurate";
 

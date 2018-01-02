@@ -1,8 +1,8 @@
 import { EventFired, EventHandler, HandleEvent, HandlerContext, HandlerResult, Success } from "@atomist/automation-client";
-import * as graphql from "../typings/types";
-import { adminSlackUserNames } from "../atomist.config";
-import * as slack from "@atomist/slack-messages/SlackMessages";
 import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
+import * as slack from "@atomist/slack-messages/SlackMessages";
+import { adminSlackUserNames } from "../atomist.config";
+import * as graphql from "../typings/types";
 
 const MyGitHubOrganization = "atomist";
 const MyGitHubRepository = "tslint-automation";
@@ -21,7 +21,7 @@ export class DeployAfterSuccessfulBuild implements HandleEvent<graphql.Successfu
             build.push.branch !== "master") {
             // my dm is gonna get even spammier
             return context.messageClient.addressUsers(
-                `There was ${slack.url(build.buildUrl,"a successful build")}, but it wasn't mine`, adminSlackUserNames)
+                `There was ${slack.url(build.buildUrl, "a successful build")}, but it wasn't mine`, adminSlackUserNames)
                 .then(() => Promise.resolve(Success));
         }
         return context.messageClient.addressUsers("I would now like to deploy tag " + build.name, adminSlackUserNames)

@@ -1,9 +1,9 @@
-import { api } from "./gitHubApi";
 import { Project } from "@atomist/automation-client/project/Project";
+import { api } from "./gitHubApi";
 
 export function getFileContentFromGithub(token: string,
-                               repo: { name: string, owner: string, ref: string },
-                               filePath: string): Promise<string> {
+                                         repo: { name: string, owner: string, ref: string },
+                                         filePath: string): Promise<string> {
 
     return api(token).repos.getContent({
         owner: repo.owner,
@@ -20,8 +20,7 @@ export function getFileContentFromGithub(token: string,
 }
 
 export function getFileContentFromProject(project: Project,
-                               filePath: string): Promise<string> {
+                                          filePath: string): Promise<string> {
 
     return project.findFile(filePath).then(f => f.getContent());
 }
-

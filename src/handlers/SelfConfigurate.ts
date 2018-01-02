@@ -100,7 +100,7 @@ export function isMine(commit: { message: string }): boolean {
 export function parseMessageId(commitMessage: string) {
     const match = commitMessage.match(/\[atomist:(stop-bothering-\S*)\]/);
     if (!match) {
-        throw new Error("I don't recognize this commit message: " + commitMessage)
+        throw new Error("I don't recognize this commit message: " + commitMessage);
     }
     return match[1];
 }
@@ -115,7 +115,7 @@ export function reportProgress(context: HandlerContext,
                                messageId: string,
                                details: {
                                    sha: string, buildUrl?: string,
-                                   buildStatusEmoji?: string
+                                   buildStatusEmoji?: string,
                                }) {
     console.log("Addressing user: " + screenName);
     const buildEmoji = details.buildStatusEmoji || ":empty-orange-square:";

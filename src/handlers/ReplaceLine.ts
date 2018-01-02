@@ -5,13 +5,22 @@ import { failedEdit, ProjectEditor, successfulEdit } from "@atomist/automation-c
 import { Project } from "@atomist/automation-client/project/Project";
 import { BranchInRepoParameters } from "./BranchInRepoParameters";
 
-function insertAboveLine(path: string, lineFrom1: number, previousContent: string, insert: string): ProjectEditor {
+/**
+ * Given known contents of a line # in a file, replace with something new.
+ * Don't change the indentation.
+ * @param {string} path
+ * @param {number} lineFrom1
+ * @param {string} previousContent
+ * @param {string} newContent
+ * @returns {ProjectEditor}
+ */
+function replaceLineInFile(path: string, lineFrom1: number, previousContent: string, newContent: string): ProjectEditor {
     return (p: Project) =>
         p.findFile(path).then(f => f.getContent().then(fileContents => {
             const currentContent = getLine(fileContents, lineFrom1);
-            if (currentContent.trim() === currentContent.trim()) {
-                const whitespace = previousContent.match(/^\s*/);
-                return f.setContent(insertBefore(fileContents, lineFrom1, whitespace + insert))
+            if (currentContent.trim() === previousContent.trim()) {
+                const whitespace = currentContent.match(/^\s*/);
+                return f.setContent(replaceLine(fileContents, lineFrom1, whitespace + newContent.trim()))
                     .then(() => successfulEdit(p, true));
             } else {
                 return Promise.resolve(failedEdit(p,
@@ -20,13 +29,13 @@ function insertAboveLine(path: string, lineFrom1: number, previousContent: strin
         })).catch(error => failedEdit(p, error));
 }
 
-function insertBefore(previousLines: string, lineFrom1: number, newLine: string): string {
+function replaceLine(previousLines: string, lineFrom1: number, newLine: string): string {
     const lines = previousLines.split("\n");
     if (lines.length < lineFrom1) {
-        return `## oops, there are only ${lines.length} lines. Unable to insert before line ${lineFrom1}`;
+        return `## oops, there are only ${lines.length} lines. Unable to replace line ${lineFrom1}`;
     }
     const before = lines.slice(0, lineFrom1 - 1);
-    const after = lines.slice(lineFrom1 - 1);
+    const after = lines.slice(lineFrom1);
     return before.concat([newLine]).concat(after).join("\n");
 }
 
@@ -38,8 +47,9 @@ function getLine(content: string, lineFrom1: number) {
     return lines[lineFrom1 - 1];
 }
 
+// these are the same as InsertLine. could make something more generic
 @Parameters()
-export class InsertAboveLineParameters {
+export class ModifyLineParameters {
     @Parameter()
     public lineFrom1: number;
 
@@ -58,14 +68,14 @@ export class InsertAboveLineParameters {
     public targets: BranchInRepoParameters = new BranchInRepoParameters();
 }
 
-export function insertAboveLineCommand(): HandleCommand {
-    return editorHandler<InsertAboveLineParameters>(params => insertAboveLine(params.path,
-        params.lineFrom1, params.previousContent, params.insert), InsertAboveLineParameters,
-        "InsertAboveLine", {
+export function replaceLineCommand(): HandleCommand {
+    return editorHandler<ModifyLineParameters>(params => replaceLineInFile(params.path,
+        params.lineFrom1, params.previousContent, params.insert), ModifyLineParameters,
+        "ReplaceLine", {
             editMode: p => ({
                 branch: p.targets.sha,
                 message: p.message,
             }),
-            intent: "insert line",
+            intent: "replace line",
         });
 }

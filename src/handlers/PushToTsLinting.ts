@@ -1,11 +1,15 @@
-import { CommandHandler, EventFired, HandleCommand, HandleEvent, HandlerContext, HandlerResult, Secrets, } from "@atomist/automation-client";
+import { CommandHandler, EventFired, HandleCommand, HandleEvent, HandlerContext, HandlerResult, Secrets } from "@atomist/automation-client";
 import { EventHandler, Secret } from "@atomist/automation-client/decorators";
 import * as GraphQL from "@atomist/automation-client/graph/graphQL";
 import { logger } from "@atomist/automation-client/internal/util/logger";
 import { GitHubRepoRef } from "@atomist/automation-client/operations/common/GitHubRepoRef";
+import { ProjectOperationCredentials } from "@atomist/automation-client/operations/common/ProjectOperationCredentials";
 import { GitCommandGitProject } from "@atomist/automation-client/project/git/GitCommandGitProject";
 import { GitProject } from "@atomist/automation-client/project/git/GitProject";
 import { GitStatus } from "@atomist/automation-client/project/git/gitStatus";
+import { Project } from "@atomist/automation-client/project/Project";
+import { buttonForCommand, MessageOptions } from "@atomist/automation-client/spi/message/MessageClient";
+import { Action } from "@atomist/slack-messages/SlackMessages";
 import * as slack from "@atomist/slack-messages/SlackMessages";
 import { exec } from "child-process-promise";
 import * as stringify from "json-stringify-safe";
@@ -14,12 +18,8 @@ import * as path from "path";
 import { Options, run } from "tslint/lib/runner";
 import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
-import { ProjectOperationCredentials } from "@atomist/automation-client/operations/common/ProjectOperationCredentials";
-import { Project } from "@atomist/automation-client/project/Project";
 import { getFileContentFromProject } from "../util/getFileContent";
 import { BranchInRepoParameters } from "./BranchInRepoParameters";
-import { Action } from "@atomist/slack-messages/SlackMessages";
-import { buttonForCommand, MessageOptions } from "@atomist/automation-client/spi/message/MessageClient";
 import { InsertAboveLineParameters } from "./InsertAboveLine";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
@@ -39,7 +39,7 @@ interface Analysis extends Details {
     pushed: boolean;
     error?: Error;
     problems?: Problem[];
-    commit: { sha: string }
+    commit: { sha: string };
 }
 
 function stringifyAnalysis(a: Analysis): string {
@@ -85,13 +85,11 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
                   ctx: HandlerContext, params: this): Promise<HandlerResult> {
         const push = event.data.Push[0];
 
-
         const details: Details = {
             ...push,
             commit: push.after,
-            specificallyRequested: false
+            specificallyRequested: false,
         } as Details;
-
 
         if (skipThisCommitEntirely(push.after.message)) {
             return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(WhereToLink.fromPush(push))}`, me);
@@ -102,18 +100,16 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
 
         initialReportEvent(ctx, push, author);
 
-
-        return handleTsLint(ctx, { token: params.githubToken }, details, author)
+        return handleTsLint(ctx, { token: params.githubToken }, details, author);
 
     }
 }
-
 
 @CommandHandler("Run tslint on a branch and make a commit", "lint for me")
 export class PleaseLint implements HandleCommand<BranchInRepoParameters> {
 
     public freshParametersInstance() {
-        return new BranchInRepoParameters()
+        return new BranchInRepoParameters();
     }
 
     public handle(context: HandlerContext, params: BranchInRepoParameters): Promise<HandlerResult> {
@@ -131,17 +127,16 @@ export class PleaseLint implements HandleCommand<BranchInRepoParameters> {
 }
 
 interface Details {
-    branch: string,
+    branch: string;
     repo: {
         owner: string,
         name: string,
-    },
-    specificallyRequested: boolean
+    };
+    specificallyRequested: boolean;
 }
 
 function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
                       details: Details, author: string) {
-
 
     const personCares: boolean = lintingIsWanted(false, author);
 
@@ -258,7 +253,8 @@ function sendNotification(project: Project, ctx: HandlerContext, details: Detail
                 ctx.messageClient.addressUsers({
                         text:
                             `Bad news: there are ${analysis.problems.length} tricky linting errors on ${
-                                linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha), "your commit")} to ${details.repo.name}#${details.branch}.`,
+                                linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha),
+                                    "your commit")} to ${details.repo.name}#${details.branch}.`,
                         attachments,
                     },
                     analysis.author, identifyMessage(analysis)))
@@ -278,16 +274,18 @@ function offerToHelp(context: HandlerContext, analysis: Analysis): Promise<void>
     const slackMessage: slack.SlackMessage = {
         text: `There are linting errors on your ${
             linkToCommit(WhereToLink.fromDetails(analysis, analysis.commit.sha))}. Would you like me to fix them for you?`,
-        attachments: [{ fallback: "buttons", actions: [
-            buttonForCommand({text: "Fix it"},
-                "PleaseLint",
-            {
-                "branch": pleaseLintParameters.branch,
-                "repo": pleaseLintParameters.owner,
-                "owner": pleaseLintParameters.owner,
-            }),
-            buttonForCommand({ text: "Never ask again"}, "StopBotheringMe")
-        ]}]
+        attachments: [{
+            fallback: "buttons", actions: [
+                buttonForCommand({ text: "Fix it" },
+                    "PleaseLint",
+                    {
+                        branch: pleaseLintParameters.branch,
+                        repo: pleaseLintParameters.owner,
+                        owner: pleaseLintParameters.owner,
+                    }),
+                buttonForCommand({ text: "Never ask again" }, "StopBotheringMe"),
+            ],
+        }],
     };
     logger.info("I would offer to help if I knew how ...");
     return context.messageClient.addressUsers(slackMessage, analysis.author);
@@ -345,11 +343,11 @@ class WhereToLink {
     }
 
     public static fromPush(push: graphql.PushToTsLinting.Push): WhereToLink {
-        return new WhereToLink(push.repo.owner, push.repo.name, push.branch, push.after.sha)
+        return new WhereToLink(push.repo.owner, push.repo.name, push.branch, push.after.sha);
     }
 
     public static fromDetails(details: Details, sha: string): WhereToLink {
-        return new WhereToLink(details.repo.owner, details.repo.name, details.branch, sha)
+        return new WhereToLink(details.repo.owner, details.repo.name, details.branch, sha);
     }
 }
 
@@ -362,7 +360,7 @@ function linkToCommit(where: WhereToLink, text: string = `commit on ${where.repo
 function linkToBranch(details: Details) {
     return slack.url(
         `https://github.com/${details.repo.owner}/${details.repo.name}/tree/${details.branch}`,
-        `${details.repo.name}#${details.branch}`)
+        `${details.repo.name}#${details.branch}`);
 }
 
 function urlToLine(push: WhereToLink, location: Location) {
@@ -465,7 +463,7 @@ function overrideButton(details: Details, problem: Problem, offendingLine: strin
             "lineFrom1": parameters.lineFrom1,
             "path": parameters.path,
             "targets.branch": parameters.targets.branch,
-        })
+        });
 }
 
 function getLine(content: string, lineFrom1: number) {
@@ -488,11 +486,15 @@ class RecognizedError {
 
     get name(): string {
         return this.ruleFailure.ruleName;
-    };
+    }
 
     get description(): string {
         return this.ruleFailure.failure;
-    };
+    }
+
+    public fix(previousContent: string): FixInfo | null {
+        return null;
+    }
 
     constructor(private ruleFailure: RuleFailure,
                 opts?: { color?: string, usefulToShowLine?: boolean }) {
@@ -505,6 +507,11 @@ class RecognizedError {
     }
 }
 
+interface FixInfo {
+    text: string,
+    action: Action
+}
+
 class CommentFormatError extends RecognizedError {
 
     public static Name = "comment-format";
@@ -514,6 +521,20 @@ class CommentFormatError extends RecognizedError {
             return new CommentFormatError(tsError);
         }
         return null;
+    }
+
+    public fix(previousContent: string): FixInfo {
+        const singleLineCommentFix = previousContent.replace(/\/\/\S/, "// ");
+        if (singleLineCommentFix !== previousContent) {
+            return {
+                text: "Proposed fix: `" + singleLineCommentFix + "`",
+                action: buttonForCommand({ text: "Fix it" },
+                    "ReplaceLine", {
+                        previousContent,
+                        newContent: singleLineCommentFix,
+                    }),
+            }
+        }
     }
 
     constructor(tsError: RuleFailure) {
@@ -538,9 +559,7 @@ function findComplaints(push: WhereToLink, baseDir: string, tslintOutput: RuleFa
         }));
 }
 
-
 export function runTslint(project: GitProject) {
-
 
     // const configurationFilename = project.baseDir + "/tsconfig.json";
     // const configuration = Configuration.findConfiguration(configurationFilename).results;
@@ -584,10 +603,10 @@ export function runTslint(project: GitProject) {
 }
 
 export interface RuleFailure {
-    endPosition: { character: number, line: number },
-    startPosition: { character: number, line: number },
-    failure: string,
-    name: string,
-    ruleName: string,
-    ruleSeverity: string
+    endPosition: { character: number, line: number };
+    startPosition: { character: number, line: number };
+    failure: string;
+    name: string;
+    ruleName: string;
+    ruleSeverity: string;
 }

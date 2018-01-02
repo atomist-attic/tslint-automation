@@ -2,12 +2,12 @@ import { logger } from "@atomist/automation-client";
 import { Configuration } from "@atomist/automation-client/configuration";
 import * as appRoot from "app-root-path";
 import * as cfenv from "cfenv";
+import { DeployAfterSuccessfulBuild } from "./handlers/DeploySelf";
 import { HelloWorld } from "./handlers/HelloWorld";
+import { insertAboveLineCommand } from "./handlers/InsertAboveLine";
 import { PleaseLint, PushToTsLinting } from "./handlers/PushToTsLinting";
 import { StopBotheringMe } from "./handlers/SelfConfigurate";
-import { DeployAfterSuccessfulBuild } from "./handlers/DeploySelf";
 import { UpdateMessageOnBuild } from "./handlers/UpdateMessageOnBuild";
-import { insertAboveLineCommand } from "./handlers/InsertAboveLine";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
@@ -25,7 +25,7 @@ export const adminCreds = { token };
 export let gitInfo = { sha: "unknown", branch: "unknown", repository: "unknown" };
 try {
     gitInfo = require(appRoot.path + "/git-info.json");
-    logger.info("Found git-info.json!")
+    logger.info("Found git-info.json!");
 } catch (e) {
     logger.warn("Did not locate git-info.json");
 }
@@ -42,7 +42,7 @@ export const configuration: Configuration = {
         HelloWorld,
         StopBotheringMe,
         PleaseLint,
-        () => insertAboveLineCommand()
+        () => insertAboveLineCommand(),
     ],
     events: [
         () => new PushToTsLinting(),

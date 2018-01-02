@@ -3,9 +3,9 @@
  */
 
 import { MappedParameter, MappedParameters, Parameter } from "@atomist/automation-client";
+import { Parameters } from "@atomist/automation-client/decorators";
 import { GitBranchRegExp } from "@atomist/automation-client/operations/common/params/gitHubPatterns";
 import { GitHubTargetsParams } from "@atomist/automation-client/operations/common/params/GitHubTargetsParams";
-import { Parameters } from "@atomist/automation-client/decorators";
 
 @Parameters()
 export class BranchInRepoParameters extends GitHubTargetsParams {
@@ -21,7 +21,7 @@ export class BranchInRepoParameters extends GitHubTargetsParams {
 
     get sha() {
         return this.branch;
-    };
+    }
 
     @MappedParameter(MappedParameters.SlackUserName)
     public screenName: string;
