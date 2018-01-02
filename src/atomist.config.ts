@@ -8,6 +8,7 @@ import { insertAboveLineCommand } from "./handlers/InsertAboveLine";
 import { PleaseLint, PushToTsLinting } from "./handlers/PushToTsLinting";
 import { StopBotheringMe } from "./handlers/SelfConfigurate";
 import { UpdateMessageOnBuild } from "./handlers/UpdateMessageOnBuild";
+import { replaceLineCommand } from "./handlers/ReplaceLine";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
@@ -43,6 +44,7 @@ export const configuration: Configuration = {
         StopBotheringMe,
         PleaseLint,
         () => insertAboveLineCommand(),
+        () => replaceLineCommand(),
     ],
     events: [
         () => new PushToTsLinting(),
