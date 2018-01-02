@@ -10,6 +10,7 @@ function insertAboveLine(path: string, lineFrom1: number, previousContent: strin
         p.findFile(path).then(f => f.getContent().then(fileContents => {
             const currentContent = getLine(fileContents, lineFrom1);
             if (currentContent.trim() === previousContent.trim()) {
+                // TODO: take the indentation from the previous content and insert it too
                 return f.setContent(insertBefore(fileContents, lineFrom1, insert)).then(() => successfulEdit(p, true));
             } else {
                 return Promise.resolve(failedEdit(p,

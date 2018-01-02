@@ -19,7 +19,7 @@ import { Project } from "@atomist/automation-client/project/Project";
 import { getFileContentFromProject } from "../util/getFileContent";
 import { BranchInRepoParameters } from "./BranchInRepoParameters";
 import { Action } from "@atomist/slack-messages/SlackMessages";
-import { buttonForCommand } from "@atomist/automation-client/spi/message/MessageClient";
+import { buttonForCommand, MessageOptions } from "@atomist/automation-client/spi/message/MessageClient";
 import { InsertAboveLineParameters } from "./InsertAboveLine";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
@@ -27,7 +27,7 @@ export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "jessica", "jessica
 const me = ["jessica", "jessitron"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
-interface Analysis {
+interface Analysis extends Details {
     project: GitProject;
     author: string;
     lintable: boolean;
@@ -144,7 +144,11 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
 
     // end debugging
 
-    const startAnalysis: Partial<Analysis> = { personWantsMyHelp: personCares, author };
+    const startAnalysis: Partial<Analysis> = {
+        ...details,
+        personWantsMyHelp: personCares,
+        author,
+    };
 
     const projectPromise: Promise<GitProject> = GitCommandGitProject.cloned(creds,
         new GitHubRepoRef(details.repo.owner, details.repo.name, details.branch));
@@ -204,14 +208,14 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
         .catch(error => reportError(ctx, details, error));
 }
 
-function sendNotification(project: Project, ctx: HandlerContext, push: Details,
+function sendNotification(project: Project, ctx: HandlerContext, details: Details,
                           analysis: Analysis): Promise<any> {
 
     const whoami = `${configuration.name}:${configuration.version}`;
 
     function reportToMe(notification: string) {
-        const details: slack.SlackMessage = {
-            text: `Linted for ${analysis.author} on ${linkToCommit(WhereToLink.fromDetails(push, analysis.commit.sha))}, branch ${push.branch}`,
+        const slackMessage: slack.SlackMessage = {
+            text: `Linted for ${analysis.author} on ${linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha))}, branch ${details.branch}`,
             attachments: [
                 {
                     fallback: "did stuff",
@@ -222,19 +226,19 @@ function sendNotification(project: Project, ctx: HandlerContext, push: Details,
         };
 
         return ctx.messageClient.addressUsers(
-            details,
+            slackMessage,
             me, { id: ctx.correlationId, ts: 2 });
     }
 
     if (!analysis.lintable) {
-        logger.info("Nothing to do on project " + push.repo + ", not lintable");
+        logger.info("Nothing to do on project " + details.repo + ", not lintable");
         return reportToMe("nothing");
     }
     if (analysis.pushed && analysis.happy) {
         // we are so useful
         return ctx.messageClient.addressUsers(
-            `Hey, I fixed some linting errors on your commit ${linkToCommit(WhereToLink.fromDetails(push, analysis.commit.sha))}. Please pull.`,
-            analysis.author)
+            `Hey, I fixed some linting errors on your commit ${linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha))}. Please pull.`,
+            analysis.author, identifyMessage(analysis))
             .then(() => reportToMe("I told them they should pull"));
     }
     if (analysis.happy && analysis.changed && !analysis.personWantsMyHelp && !analysis.offered) {
@@ -245,19 +249,23 @@ function sendNotification(project: Project, ctx: HandlerContext, push: Details,
     }
     if (!analysis.pushed && !analysis.happy) {
 
-        return problemsToAttachments(project, WhereToLink.fromDetails(push, analysis.commit.sha), analysis.problems)
+        return problemsToAttachments(project, analysis, WhereToLink.fromDetails(details, analysis.commit.sha), analysis.problems)
             .then(attachments =>
                 ctx.messageClient.addressUsers({
                         text:
                             `Bad news: there are some tricky linting errors on ${
-                                linkToCommit(WhereToLink.fromDetails(push, analysis.commit.sha), "your commit")} to ${push.repo.name}#${push.branch}.`,
+                                linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha), "your commit")} to ${details.repo.name}#${details.branch}.`,
                         attachments,
                     },
-                    analysis.author))
+                    analysis.author, identifyMessage(analysis)))
             .then(() => reportToMe("I told them to fix it themselves"));
     }
 // OK I'm not handling the other cases. Tell me about it.
     return reportToMe("I did nothing");
+}
+
+function identifyMessage(info: Details): MessageOptions {
+    return { id: `tslint-${info.repo.owner}-${info.repo.name}-${info.branch}` };
 }
 
 function offerToHelp(context: HandlerContext): Promise<void> {
@@ -381,14 +389,14 @@ function problemToText(push: WhereToLink, baseDir: string, tsError: RuleFailure)
     return `${tsError.ruleSeverity}: (${tsError.ruleSeverity}) ${linkToLine(push, location)}: ${tsError.failure}`;
 }
 
-function problemsToAttachments(project: Project, push: WhereToLink, problems?: Problem[]): Promise<slack.Attachment[]> {
+function problemsToAttachments(project: Project, details: Details, push: WhereToLink, problems?: Problem[]): Promise<slack.Attachment[]> {
     if (!problems) {
         return Promise.resolve([]);
     }
-    return Promise.all(problems.map(p => problemToAttachment(project, push, p)));
+    return Promise.all(problems.map(p => problemToAttachment(project, details, push, p)));
 }
 
-function problemToAttachment(project: Project, push: WhereToLink, problem: Problem): Promise<slack.Attachment> {
+function problemToAttachment(project: Project, details: Details, push: WhereToLink, problem: Problem): Promise<slack.Attachment> {
     const output: slack.Attachment = { fallback: "problem", mrkdwn_in: ["text"] };
 
     if (problem.location) {
@@ -406,7 +414,7 @@ function problemToAttachment(project: Project, push: WhereToLink, problem: Probl
         return getFileContentFromProject(project, problem.location.path).then(content => {
             const lineContent = getLine(content, problem.location.lineFrom1);
             output.text = "`" + lineContent.trim() + "`";
-            output.actions = [overrideButton(project, problem, lineContent)];
+            output.actions = [overrideButton(details, problem, lineContent)];
             return output;
         });
     } else {
@@ -415,15 +423,16 @@ function problemToAttachment(project: Project, push: WhereToLink, problem: Probl
     }
 }
 
-function overrideButton(project: Project, problem: Problem, offendingLine: string): Action {
+function overrideButton(details: Details, problem: Problem, offendingLine: string): Action {
     const parameters = new InsertAboveLineParameters();
-    parameters.targets.owner = project.id.owner;
-    parameters.targets.repo = project.id.repo;
+    parameters.targets.owner = details.repo.owner;
+    parameters.targets.repo = details.repo.name;
     parameters.message = "Override lint rule";
     parameters.insert = `// tslint:disable-next-line:${problem.recognizedError.name}`;
     parameters.previousContent = offendingLine;
     parameters.lineFrom1 = problem.location.lineFrom1;
     parameters.path = problem.location.path;
+    parameters.targets.branch = details.branch;
     // I don't know whether this is necessary but I want it to work and I don't want to fiddle much
     return buttonForCommand({ text: "Override" }, "InsertAboveLine",
         {
@@ -434,6 +443,7 @@ function overrideButton(project: Project, problem: Problem, offendingLine: strin
             "previousContent": parameters.previousContent,
             "lineFrom1": parameters.lineFrom1,
             "path": parameters.path,
+            "branch": parameters.path,
         })
 }
 
