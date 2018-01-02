@@ -9,7 +9,7 @@ function insertAboveLine(path: string, lineFrom1: number, previousContent: strin
     return (p: Project) =>
         p.findFile(path).then(f => f.getContent().then(fileContents => {
             const currentContent = getLine(fileContents, lineFrom1);
-            if (currentContent === previousContent) {
+            if (currentContent.trim() === previousContent.trim()) {
                 return f.setContent(insertBefore(fileContents, lineFrom1, insert)).then(() => successfulEdit(p, true));
             } else {
                 return Promise.resolve(failedEdit(p,
@@ -65,5 +65,6 @@ export function insertAboveLineCommand(): HandleCommand {
                 branch: p.targets.sha,
                 message: p.message,
             }),
+            intent: "insert line"
         });
 }
