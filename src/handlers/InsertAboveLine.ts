@@ -37,7 +37,7 @@ function getLine(content: string, lineFrom1: number) {
 }
 
 @Parameters()
-class InsertAboveLineParameters {
+export class InsertAboveLineParameters {
     @Parameter()
     public lineFrom1: number;
 

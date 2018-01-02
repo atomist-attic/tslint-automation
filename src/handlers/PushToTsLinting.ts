@@ -18,6 +18,9 @@ import { ProjectOperationCredentials } from "@atomist/automation-client/operatio
 import { Project } from "@atomist/automation-client/project/Project";
 import { getFileContentFromProject } from "../util/getFileContent";
 import { BranchInRepoParameters } from "./BranchInRepoParameters";
+import { Action } from "@atomist/slack-messages/SlackMessages";
+import { buttonForCommand } from "@atomist/automation-client/spi/message/MessageClient";
+import { InsertAboveLineParameters } from "./InsertAboveLine";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "jessica", "jessica", "the-grinch"];
@@ -401,14 +404,37 @@ function problemToAttachment(project: Project, push: WhereToLink, problem: Probl
 
     if (problem.recognizedError && problem.location && problem.recognizedError.usefulToShowLine) {
         return getFileContentFromProject(project, problem.location.path).then(content => {
-            output.text = "`" + getLine(content, problem.location.lineFrom1).trim() + "`";
+            const lineContent = getLine(content, problem.location.lineFrom1);
+            output.text = "`" + lineContent.trim() + "`";
+            output.actions = [overrideButton(project, problem, lineContent)];
             return output;
         });
     } else {
         logger.info("Recognized error? " + !!problem.recognizedError + " problem.location? " + !!problem.location);
         return Promise.resolve(output);
     }
+}
 
+function overrideButton(project: Project, problem: Problem, offendingLine: string): Action {
+    const parameters = new InsertAboveLineParameters();
+    parameters.targets.owner = project.id.owner;
+    parameters.targets.repo = project.id.repo;
+    parameters.message = "Override lint rule";
+    parameters.insert = `// tslint:disable-next-line:${problem.recognizedError.name}`;
+    parameters.previousContent = offendingLine;
+    parameters.lineFrom1 = problem.location.lineFrom1;
+    parameters.path = problem.location.path;
+    // I don't know whether this is necessary but I want it to work and I don't want to fiddle much
+    return buttonForCommand({ text: "Override" }, "InsertAboveLine",
+        {
+            "targets.owner": parameters.targets.owner,
+            "targets.repo": parameters.targets.repo,
+            "message": parameters.message,
+            "insert": parameters.insert,
+            "previousContent": parameters.previousContent,
+            "lineFrom1": parameters.lineFrom1,
+            "path": parameters.path,
+        })
 }
 
 function getLine(content: string, lineFrom1: number) {
