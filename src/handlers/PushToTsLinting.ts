@@ -23,7 +23,7 @@ import { BranchInRepoParameters } from "./BranchInRepoParameters";
 import { InsertAboveLineParameters } from "./InsertAboveLine";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "clay"];
-export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", ];
+export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];
 const me = ["jessica", "jessitron"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
