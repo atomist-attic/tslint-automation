@@ -23,7 +23,7 @@ import { buttonForCommand, MessageOptions } from "@atomist/automation-client/spi
 import { InsertAboveLineParameters } from "./InsertAboveLine";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "jessica", "jessitron", "clay"];
-export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "jessica", "jessica", "the-grinch"];
+export const PeopleWhoDoNotWantMeToOfferToHelp = [];
 const me = ["jessica", "jessitron"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
@@ -198,7 +198,8 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
                     .catch(error => ({ ...soFar, pushed: false, offered: false, error } as Analysis));
             } else {
                 if (shouldOfferToHelp(soFar.author)) {
-                    return offerToHelp(ctx).then(() => ({ ...soFar, pushed: false, offered: true } as Analysis));
+                    return offerToHelp(ctx, soFar as Analysis)
+                        .then(() => ({ ...soFar, pushed: false, offered: true } as Analysis));
                 }
             }
         } else {
@@ -256,7 +257,7 @@ function sendNotification(project: Project, ctx: HandlerContext, details: Detail
             .then(attachments =>
                 ctx.messageClient.addressUsers({
                         text:
-                            `Bad news: there are some tricky linting errors on ${
+                            `Bad news: there are ${analysis.problems.length} tricky linting errors on ${
                                 linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha), "your commit")} to ${details.repo.name}#${details.branch}.`,
                         attachments,
                     },
@@ -271,9 +272,25 @@ function identifyMessage(info: Details): MessageOptions {
     return { id: `yo-tslint-${info.repo.owner}-${info.repo.name}-${info.branch}` };
 }
 
-function offerToHelp(context: HandlerContext): Promise<void> {
+function offerToHelp(context: HandlerContext, analysis: Analysis): Promise<void> {
+    const pleaseLintParameters: BranchInRepoParameters = new BranchInRepoParameters;
+
+    const slackMessage: slack.SlackMessage = {
+        text: `There are linting errors on your ${
+            linkToCommit(WhereToLink.fromDetails(analysis, analysis.commit.sha))}. Would you like me to fix them for you?`,
+        attachments: [{ fallback: "buttons", actions: [
+            buttonForCommand({text: "Fix it"},
+                "PleaseLint",
+            {
+                "branch": pleaseLintParameters.branch,
+                "repo": pleaseLintParameters.owner,
+                "owner": pleaseLintParameters.owner,
+            }),
+            buttonForCommand({ text: "Never ask again"}, "StopBotheringMe")
+        ]}]
+    };
     logger.info("I would offer to help if I knew how ...");
-    return Promise.resolve();
+    return context.messageClient.addressUsers(slackMessage, analysis.author);
 }
 
 function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachment {
