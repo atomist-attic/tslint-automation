@@ -10,8 +10,9 @@ function insertAboveLine(path: string, lineFrom1: number, previousContent: strin
         p.findFile(path).then(f => f.getContent().then(fileContents => {
             const currentContent = getLine(fileContents, lineFrom1);
             if (currentContent.trim() === previousContent.trim()) {
-                // TODO: take the indentation from the previous content and insert it too
-                return f.setContent(insertBefore(fileContents, lineFrom1, insert)).then(() => successfulEdit(p, true));
+                const whitespace = previousContent.match(/^\s*/);
+                return f.setContent(insertBefore(fileContents, lineFrom1, whitespace + insert))
+                    .then(() => successfulEdit(p, true));
             } else {
                 return Promise.resolve(failedEdit(p,
                     new Error("The content at line " + lineFrom1 + " did not match " + previousContent)));
@@ -66,6 +67,6 @@ export function insertAboveLineCommand(): HandleCommand {
                 branch: p.targets.sha,
                 message: p.message,
             }),
-            intent: "insert line"
+            intent: "insert line",
         });
 }

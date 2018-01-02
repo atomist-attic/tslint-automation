@@ -89,6 +89,7 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
         const details: Details = {
             ...push,
             commit: push.after,
+            specificallyRequested: false
         } as Details;
 
 
@@ -119,6 +120,7 @@ export class PleaseLint implements HandleCommand<BranchInRepoParameters> {
         const detail: Details = {
             branch: params.branch || "master",
             repo: { owner: params.owner, name: params.repo },
+            specificallyRequested: true,
         };
 
         initialReportCommand(context, detail, params.screenName);
@@ -133,7 +135,8 @@ interface Details {
     repo: {
         owner: string,
         name: string,
-    }
+    },
+    specificallyRequested: boolean
 }
 
 function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
@@ -188,7 +191,7 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
             }));
     const letsPushIt: Promise<Analysis> = didItChange.then(soFar => {
         if (soFar.changed && soFar.happy) {
-            if (soFar.personWantsMyHelp) {
+            if (soFar.personWantsMyHelp || soFar.specificallyRequested) {
                 return soFar.project.commit(CommitMessage)
                     .then(() => soFar.project.push())
                     .then(() => ({ ...soFar, pushed: true, offered: false } as Analysis))
@@ -265,7 +268,7 @@ function sendNotification(project: Project, ctx: HandlerContext, details: Detail
 }
 
 function identifyMessage(info: Details): MessageOptions {
-    return { id: `tslint-${info.repo.owner}-${info.repo.name}-${info.branch}` };
+    return { id: `yo-tslint-${info.repo.owner}-${info.repo.name}-${info.branch}` };
 }
 
 function offerToHelp(context: HandlerContext): Promise<void> {
@@ -283,7 +286,8 @@ function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachme
         color,
         fallback: "analysis goes here",
         text: analysis.problems ? analysis.problems.map(formatProblem).join("\n") : "No problems",
-        fields: fields(["author", "personWantsMyHelp", "lintable", "happy", "changed", "pushed"],
+        fields: fields(["author", "personWantsMyHelp", "specificallyRequested",
+                "lintable", "happy", "changed", "pushed"],
             ["status.raw", "error"], analysis),
         footer: ctx.correlationId,
     };
@@ -443,7 +447,7 @@ function overrideButton(details: Details, problem: Problem, offendingLine: strin
             "previousContent": parameters.previousContent,
             "lineFrom1": parameters.lineFrom1,
             "path": parameters.path,
-            "branch": parameters.path,
+            "targets.branch": parameters.targets.branch,
         })
 }
 
