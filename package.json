@@ -1,6 +1,6 @@
 {
   "name": "@atomist/tslint-automation",
-  "version": "0.1.32",
+  "version": "0.1.33",
   "description": "Run tslint on commits to projects that support it",
   "dependencies": {
     "@atomist/automation-client": "https://r.atomist.com/rJxzv6pMKXz",
