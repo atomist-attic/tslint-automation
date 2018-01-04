@@ -28,7 +28,3 @@ notifications:
 cache:
   directories:
   - "$HOME/.npm"
-before_install:
-- openssl aes-256-cbc -K $encrypted_c97baace1209_key -iv $encrypted_c97baace1209_iv
-  -in linting-automation-48eb46756ce2.json.enc -out linting-automation-48eb46756ce2.json
-  -d
