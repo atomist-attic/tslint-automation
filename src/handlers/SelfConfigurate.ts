@@ -12,7 +12,7 @@ import { Project } from "@atomist/automation-client/project/Project";
 import * as slack from "@atomist/slack-messages/SlackMessages";
 import * as stringify from "json-stringify-safe";
 import * as _ from "lodash";
-import { adminChannelId, adminCreds, adminSlackUserNames } from "../atomist.config";
+import { adminChannelId, adminCreds, adminSlackUserNames } from "../credentials";
 
 const whereToAdd = /PeopleWhoDoNotWantMeToOfferToHelp *= *\[/;
 

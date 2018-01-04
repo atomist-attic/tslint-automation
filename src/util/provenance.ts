@@ -1,6 +1,7 @@
 import { logger } from "@atomist/automation-client";
-import { configuration, gitInfo } from "../atomist.config";
+import { configuration } from "../atomist.config";
 import { execufy } from "./execufy" ;
+import { gitInfo } from "../credentials";
 
 function describeLocal(): Promise<string> {
     return Promise.all(
@@ -9,7 +10,7 @@ function describeLocal(): Promise<string> {
             execufy("hostname", "an unknown host")]).then(values => {
         const [sha, dirty, host] = values;
         return Promise.resolve(
-            `this message brought to you by ${configuration.name}:${configuration.version} running on ${host} at ${sha}${dirty}`);
+            `this message brought to you by ${configuration.name}:${configuration.version} running on ${host} at ${gitInfo.sha}${dirty}`);
     });
 }
 

@@ -1,40 +1,12 @@
-import {
-    EventFired, EventHandler, HandleCommand, HandleEvent, HandlerContext, HandlerResult, logger, Parameter,
-    Success,
-} from "@atomist/automation-client";
+import { HandleCommand, HandlerContext, logger, MappedParameter, MappedParameters, Parameter, Secret, Secrets, } from "@atomist/automation-client";
+import axios from "axios";
 import { Parameters } from "@atomist/automation-client/decorators";
-import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
 import { commandHandlerFrom, OnCommand } from "@atomist/automation-client/onCommand";
 import * as slack from "@atomist/slack-messages/SlackMessages";
 import * as child_process from "child_process";
-import * as graphql from "../typings/types";
 import { whereAmIRunning } from "../util/provenance";
-import { adminSlackUserNames } from "../credentials";
+import { adminCreds, adminGitHubUser } from "../credentials";
 
-const MyGitHubOrganization = "atomist";
-const MyGitHubRepository = "tslint-automation";
-
-@EventHandler("Deploy myself; update the image in k8s when a build succeeds",
-    subscriptionFromFile("graphql/successfulBuild"))
-export class DeployAfterSuccessfulBuild implements HandleEvent<graphql.SuccessfulBuild.Subscription> {
-
-    public handle(event: EventFired<graphql.SuccessfulBuild.Subscription>,
-                  context: HandlerContext): Promise<HandlerResult> {
-
-        const build = event.data.Build[0];
-
-        if (build.repo.name !== MyGitHubRepository ||
-            build.repo.owner !== MyGitHubOrganization ||
-            build.push.branch !== "master") {
-            // my dm is gonna get even spammier
-            return context.messageClient.addressUsers(
-                `There was ${slack.url(build.buildUrl, "a successful build")}, but it wasn't mine`, adminSlackUserNames)
-                .then(() => Promise.resolve(Success));
-        }
-        return context.messageClient.addressUsers("I would now like to deploy tag " + build.name, adminSlackUserNames)
-            .then(() => Success);
-    }
-}
 
 function runCommandLine(cmd: string): Promise<{ stdout: string, stderr: string, error?: Error }> {
     return new Promise((resolve, reject) => {
@@ -49,22 +21,56 @@ function runCommandLine(cmd: string): Promise<{ stdout: string, stderr: string, 
 }
 
 @Parameters()
-export class DeploySelfParameters {
+export class SshParameters {
     @Parameter()
-    public dockerImageTag: string;
+    public cmd: string;
+
+    @MappedParameter(MappedParameters.SlackUser)
+    public slackUserId: string;
+
+    @MappedParameter(MappedParameters.SlackChannel)
+    public slackChannelId: string;
+
+    @Secret(Secrets.UserToken)
+    public authorization: string;
 }
 
-const deployAndReport: OnCommand<DeploySelfParameters> = (context: HandlerContext, params: DeploySelfParameters) => {
-    return deploySelf(params.dockerImageTag)
-        .then(deployCmdOutput => reportCommandOutput(deployCmdOutput)
-            .then(message =>
-                context.messageClient.respond(message)));
+const runAndReport: OnCommand<SshParameters> = (context: HandlerContext, params: SshParameters) => {
+    if (params.authorization === adminCreds.token) {
+        return context.messageClient.respond("Nope. Got the same token this automation runs with.")
+    }
+
+    return gitHubLogin(params.authorization).then(ghLogin => {
+        if (ghLogin !== adminGitHubUser) {
+            return context.messageClient.respond("Nope. admins only")
+        }
+        return runCommand(params.cmd)
+            .then(deployCmdOutput => reportCommandOutput(deployCmdOutput)
+                .then(message =>
+                    context.messageClient.respond(message)))
+    });
 };
 
-export function deployCommand(): HandleCommand<DeploySelfParameters> {
-    return commandHandlerFrom(deployAndReport, DeploySelfParameters,
+export function sshCommand(): HandleCommand<SshParameters> {
+    return commandHandlerFrom(runAndReport, SshParameters,
         "DeploySelfCommand", "update the docker image for the container running this automation",
         "deploy tslint-automation");
+}
+
+const userUrl = "https://api.github.com/user";
+
+function gitHubLogin(token: string): Promise<string> {
+    return axios.get(userUrl, {
+        headers:
+            { Authorization: "token " + token },
+    })
+        .then(userResponse => userResponse.data.login,
+            error => {
+                logger.error("Unable to retrieve github user");
+                logger.error("URL: " + userUrl);
+                logger.error(error.message);
+                process.exit(1);
+            });
 }
 
 async function reportCommandOutput(commandOutput: CommandOutput): Promise<slack.SlackMessage> {
@@ -97,7 +103,7 @@ interface CommandOutput {
     stderr: string;
 }
 
-function deploySelf(dockerImageTag: string): Promise<CommandOutput> {
+function runCommand(dockerImageTag: string): Promise<CommandOutput> {
     const cmd = "kubectl set image deployment/atomist-community-linting atomist-community-linting=jessitron/linting-automation:" + dockerImageTag;
     logger.info("Running: " + cmd);
     return runCommandLine(cmd)

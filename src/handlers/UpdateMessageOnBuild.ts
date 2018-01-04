@@ -1,11 +1,10 @@
 import { EventFired, EventHandler, HandleEvent, HandlerContext, HandlerResult, Success } from "@atomist/automation-client";
 import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
-import * as slack from "@atomist/slack-messages/SlackMessages";
 import * as _ from "lodash";
-import { adminSlackUserNames } from "../atomist.config";
 import * as graphql from "../typings/types";
 
 import * as stopBotheringMe from "./SelfConfigurate";
+import { adminSlackUserNames } from "../credentials";
 
 @EventHandler("Update some messages when a build status arrives",
     subscriptionFromFile("graphql/subscription/anyBuild"))
@@ -29,8 +28,7 @@ export class UpdateMessageOnBuild implements HandleEvent<graphql.BuildFromPush.S
                     }));
         }
 
-        return context.messageClient.addressUsers("I do not recognize " + slack.url(build.buildUrl, build.name), adminSlackUserNames)
-            .then(() => Success);
+        return Promise.resolve(Success);
     }
 }
 
