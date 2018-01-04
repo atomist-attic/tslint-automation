@@ -9,7 +9,7 @@ ENV PATH $PATH:/gcloud/google-cloud-sdk/bin
 #COPY linting-automation-48eb46756ce2.json /tmp/key.json
 #RUN gcloud auth activate-service-account --key-file /tmp/key.json
 # travis will have decrypted this nice file. Do not put it in the docker image.
-RUN rm /tmp/key.json
+#RUN rm /tmp/key.json
 
 RUN gcloud --quiet components install kubectl
 
