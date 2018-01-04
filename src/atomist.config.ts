@@ -2,7 +2,7 @@ import { logger } from "@atomist/automation-client";
 import { Configuration } from "@atomist/automation-client/configuration";
 import * as appRoot from "app-root-path";
 import * as cfenv from "cfenv";
-import { DeployAfterSuccessfulBuild } from "./handlers/DeploySelf";
+import { DeployAfterSuccessfulBuild, deployCommand } from "./handlers/DeploySelf";
 import { HelloWorld } from "./handlers/HelloWorld";
 import { insertAboveLineCommand } from "./handlers/InsertAboveLine";
 import { PleaseLint, PushToTsLinting } from "./handlers/PushToTsLinting";
@@ -45,6 +45,7 @@ export const configuration: Configuration = {
         PleaseLint,
         () => insertAboveLineCommand(),
         () => replaceLineCommand(),
+        () => deployCommand()
     ],
     events: [
         () => new PushToTsLinting(),

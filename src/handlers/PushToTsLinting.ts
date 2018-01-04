@@ -255,7 +255,7 @@ function sendNotification(project: Project, ctx: HandlerContext, details: Detail
 }
 
 function identifyMessage(info: Details): MessageOptions {
-    return { id: `yo-tslint-${info.repo.owner}-${info.repo.name}-${info.branch}` };
+    return { id: `yo-tslint-${info.repo.owner}-${info.repo.name}-${info.branch}`, ttl: 90 };
 }
 
 function offerToHelp(context: HandlerContext, analysis: Analysis): Promise<void> {

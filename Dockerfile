@@ -6,8 +6,8 @@ ENV NPM_CONFIG_LOGLEVEL warn
 RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcl && bash /tmp/gcl --install-dir=/gcloud
 RUN echo $(ls /gcloud/google-cloud-sdk/bin)
 ENV PATH $PATH:/gcloud/google-cloud-sdk/bin
-COPY linting-automation-48eb46756ce2.json /tmp/key.json
-RUN gcloud auth activate-service-account --key-file /tmp/key.json
+#COPY linting-automation-48eb46756ce2.json /tmp/key.json
+#RUN gcloud auth activate-service-account --key-file /tmp/key.json
 # travis will have decrypted this nice file. Do not put it in the docker image.
 RUN rm /tmp/key.json
 
