@@ -9,6 +9,7 @@ import { replaceLineCommand } from "./handlers/ReplaceLine";
 import { StopBotheringMe } from "./handlers/SelfConfigurate";
 import { UpdateMessageOnBuild } from "./handlers/UpdateMessageOnBuild";
 import { adminCreds } from "./credentials";
+import { sshCommand } from "./handlers/Ssh";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
@@ -28,6 +29,7 @@ export const configuration: Configuration = {
         () => insertAboveLineCommand(),
         () => replaceLineCommand(),
         () => deployCommand(),
+        () => sshCommand(),
     ],
     events: [
         () => new PushToTsLinting(),

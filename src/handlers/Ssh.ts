@@ -53,8 +53,8 @@ const runAndReport: OnCommand<SshParameters> = (context: HandlerContext, params:
 
 export function sshCommand(): HandleCommand<SshParameters> {
     return commandHandlerFrom(runAndReport, SshParameters,
-        "DeploySelfCommand", "update the docker image for the container running this automation",
-        "deploy tslint-automation");
+        "AdminCommand", "administrate tslint-automation",
+        "admin tslint-automation");
 }
 
 const userUrl = "https://api.github.com/user";
@@ -103,8 +103,7 @@ interface CommandOutput {
     stderr: string;
 }
 
-function runCommand(dockerImageTag: string): Promise<CommandOutput> {
-    const cmd = "kubectl set image deployment/atomist-community-linting atomist-community-linting=jessitron/linting-automation:" + dockerImageTag;
+function runCommand(cmd: string): Promise<CommandOutput> {
     logger.info("Running: " + cmd);
     return runCommandLine(cmd)
         .then(result => {
