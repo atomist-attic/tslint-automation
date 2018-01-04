@@ -45,7 +45,7 @@ export const configuration: Configuration = {
         PleaseLint,
         () => insertAboveLineCommand(),
         () => replaceLineCommand(),
-        () => deployCommand()
+        () => deployCommand(),
     ],
     events: [
         () => new PushToTsLinting(),

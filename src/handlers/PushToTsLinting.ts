@@ -325,11 +325,6 @@ function reportError(ctx: HandlerContext, details: Details, error: Error) {
 }
 
 class WhereToLink {
-    constructor(public readonly owner: string,
-                public readonly repo: string,
-                public readonly branch: string,
-                public readonly sha: string) {
-    }
 
     public static fromPush(push: graphql.PushToTsLinting.Push): WhereToLink {
         return new WhereToLink(push.repo.owner, push.repo.name, push.branch, push.after.sha);
@@ -337,6 +332,12 @@ class WhereToLink {
 
     public static fromDetails(details: Details, sha: string): WhereToLink {
         return new WhereToLink(details.repo.owner, details.repo.name, details.branch, sha);
+    }
+
+    constructor(public readonly owner: string,
+                public readonly repo: string,
+                public readonly branch: string,
+                public readonly sha: string) {
     }
 }
 
@@ -465,8 +466,8 @@ function getLine(content: string, lineFrom1: number) {
 }
 
 export interface WhereToFix {
-    repo: { owner: string, name: string },
-    branch: string
+    repo: { owner: string, name: string };
+    branch: string;
 }
 
 class RecognizedError {
@@ -478,6 +479,16 @@ class RecognizedError {
 
     public color: string;
     public usefulToShowLine: boolean;
+
+    constructor(private ruleFailure: RuleFailure,
+                opts?: { color?: string, usefulToShowLine?: boolean }) {
+        const fullOpts = {
+            ...RecognizedError.defaultOptions,
+            ...opts,
+        };
+        this.color = fullOpts.color;
+        this.usefulToShowLine = fullOpts.usefulToShowLine;
+    }
 
     get name(): string {
         return this.ruleFailure.ruleName;
@@ -491,15 +502,6 @@ class RecognizedError {
         return { text: "", actions: [] };
     }
 
-    constructor(private ruleFailure: RuleFailure,
-                opts?: { color?: string, usefulToShowLine?: boolean }) {
-        const fullOpts = {
-            ...RecognizedError.defaultOptions,
-            ...opts,
-        };
-        this.color = fullOpts.color;
-        this.usefulToShowLine = fullOpts.usefulToShowLine;
-    }
 }
 
 interface FixInfo {
@@ -518,6 +520,11 @@ class CommentFormatError extends RecognizedError {
         return null;
     }
 
+    constructor(tsError: RuleFailure) {
+        super(tsError,
+            { color: "#6020a0", usefulToShowLine: true });
+    }
+
     // yeah ok I wish I had both previousContent and Location in the constructor instead
     public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
         const singleLineCommentFix = previousContent.replace(/\/\/(\S)/, "// $1");
@@ -530,10 +537,10 @@ class CommentFormatError extends RecognizedError {
                         "targets.repo": details.repo.name,
                         "targets.branch": details.branch,
                         previousContent,
-                        insert: singleLineCommentFix,
-                        lineFrom1: location.lineFrom1,
-                        message: "lint: comment format",
-                        path: location.path,
+                        "insert": singleLineCommentFix,
+                        "lineFrom1": location.lineFrom1,
+                        "message": "lint: comment format",
+                        "path": location.path,
                     })],
             };
         } else {
@@ -541,10 +548,6 @@ class CommentFormatError extends RecognizedError {
         }
     }
 
-    constructor(tsError: RuleFailure) {
-        super(tsError,
-            { color: "#6020a0", usefulToShowLine: true });
-    }
 }
 
 function recognizeError(tsError: RuleFailure): RecognizedError {

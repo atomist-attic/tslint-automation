@@ -2,13 +2,13 @@ import {
     EventFired, EventHandler, HandleCommand, HandleEvent, HandlerContext, HandlerResult, logger, Parameter,
     Success,
 } from "@atomist/automation-client";
+import { Parameters } from "@atomist/automation-client/decorators";
 import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
+import { commandHandlerFrom, OnCommand } from "@atomist/automation-client/onCommand";
 import * as slack from "@atomist/slack-messages/SlackMessages";
+import * as child_process from "child_process";
 import { adminSlackUserNames } from "../atomist.config";
 import * as graphql from "../typings/types";
-import * as child_process from "child_process";
-import { commandHandlerFrom, OnCommand } from "@atomist/automation-client/onCommand";
-import { Parameters } from "@atomist/automation-client/decorators";
 import { whereAmIRunning } from "../util/provenance";
 
 const MyGitHubOrganization = "atomist";
@@ -36,12 +36,11 @@ export class DeployAfterSuccessfulBuild implements HandleEvent<graphql.Successfu
     }
 }
 
-
-function runCommandLine(cmd: string): Promise<{ stdout: string, stderr: string, error?: Error, }> {
+function runCommandLine(cmd: string): Promise<{ stdout: string, stderr: string, error?: Error }> {
     return new Promise((resolve, reject) => {
         child_process.exec(cmd, (error, stdout: string, stderr: string) => {
             if (error) {
-                resolve({ stdout, stderr, error })
+                resolve({ stdout, stderr, error });
             } else {
                 resolve({ stdout, stderr });
             }
@@ -52,24 +51,21 @@ function runCommandLine(cmd: string): Promise<{ stdout: string, stderr: string, 
 @Parameters()
 export class DeploySelfParameters {
     @Parameter()
-    public dockerImageTag: string
+    public dockerImageTag: string;
 }
-
 
 const deployAndReport: OnCommand<DeploySelfParameters> = (context: HandlerContext, params: DeploySelfParameters) => {
     return deploySelf(params.dockerImageTag)
         .then(deployCmdOutput => reportCommandOutput(deployCmdOutput)
             .then(message =>
-                context.messageClient.respond(message)))
+                context.messageClient.respond(message)));
 };
-
 
 export function deployCommand(): HandleCommand<DeploySelfParameters> {
     return commandHandlerFrom(deployAndReport, DeploySelfParameters,
         "DeploySelfCommand", "update the docker image for the container running this automation",
         "deploy tslint-automation");
 }
-
 
 async function reportCommandOutput(commandOutput: CommandOutput): Promise<slack.SlackMessage> {
 
@@ -79,14 +75,14 @@ async function reportCommandOutput(commandOutput: CommandOutput): Promise<slack.
             fallback: "stderr",
             color: "#a00410",
             text: commandOutput.stderr,
-        })
+        });
     }
     if (commandOutput.stderr && commandOutput.stderr.length > 0) {
         attachments.push({
             fallback: "stderr",
             color: "#149410",
             text: commandOutput.stderr,
-        })
+        });
     }
     const message: slack.SlackMessage = {
         text: "Ran: `" + commandOutput.cmd + "`",
@@ -96,9 +92,9 @@ async function reportCommandOutput(commandOutput: CommandOutput): Promise<slack.
 }
 
 interface CommandOutput {
-    cmd: string,
-    stdout: string,
-    stderr: string
+    cmd: string;
+    stdout: string;
+    stderr: string;
 }
 
 function deploySelf(dockerImageTag: string): Promise<CommandOutput> {
@@ -115,7 +111,6 @@ function deploySelf(dockerImageTag: string): Promise<CommandOutput> {
                 logger.error(error.toString());
             }
             return { cmd, stdout, stderr };
-        })
-
+        });
 
 }
