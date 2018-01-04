@@ -77,11 +77,11 @@ async function reportCommandOutput(commandOutput: CommandOutput): Promise<slack.
             text: commandOutput.stderr,
         });
     }
-    if (commandOutput.stderr && commandOutput.stderr.length > 0) {
+    if (commandOutput.stdout && commandOutput.stdout.length > 0) {
         attachments.push({
-            fallback: "stderr",
+            fallback: "stdout",
             color: "#149410",
-            text: commandOutput.stderr,
+            text: commandOutput.stdout,
         });
     }
     const message: slack.SlackMessage = {

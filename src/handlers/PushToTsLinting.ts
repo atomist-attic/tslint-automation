@@ -250,7 +250,6 @@ function sendNotification(project: Project, ctx: HandlerContext, details: Detail
                     analysis.author, identifyMessage(analysis)))
             .then(() => reportToMe("I told them to fix it themselves"));
     }
-// OK I'm not handling the other cases. Tell me about it.
     return reportToMe("I did nothing");
 }
 
