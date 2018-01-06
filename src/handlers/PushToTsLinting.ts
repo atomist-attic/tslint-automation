@@ -22,6 +22,8 @@ import { getFileContentFromProject } from "../util/getFileContent";
 import { BranchInRepoParameters } from "./BranchInRepoParameters";
 import { InsertAboveLineParameters } from "./InsertAboveLine";
 import { adminChannelId } from "../credentials";
+import { RuleFailure, Location } from "./aboutTsLint";
+import { RecognizedError, recognizeError } from "./recognizedErrors";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];
@@ -372,12 +374,6 @@ function formatProblem(problem: Problem): string {
     return problem.recognizedError ? slack.bold(problem.recognizedError.name) + "" : problem.text;
 }
 
-interface Location {
-    readonly path: string;
-    readonly lineFrom1: number;
-    readonly columnFrom1: number;
-    readonly description: string;
-}
 
 function locate(baseDir: string, tsError: RuleFailure): Location | undefined {
 
@@ -464,94 +460,6 @@ function getLine(content: string, lineFrom1: number) {
     return lines[lineFrom1 - 1];
 }
 
-export interface WhereToFix {
-    repo: { owner: string, name: string };
-    branch: string;
-}
-
-class RecognizedError {
-
-    private static defaultOptions = {
-        color: "#888888",
-        usefulToShowLine: true,
-    };
-
-    public color: string;
-    public usefulToShowLine: boolean;
-
-    constructor(private ruleFailure: RuleFailure,
-                opts?: { color?: string, usefulToShowLine?: boolean }) {
-        const fullOpts = {
-            ...RecognizedError.defaultOptions,
-            ...opts,
-        };
-        this.color = fullOpts.color;
-        this.usefulToShowLine = fullOpts.usefulToShowLine;
-    }
-
-    get name(): string {
-        return this.ruleFailure.ruleName;
-    }
-
-    get description(): string {
-        return this.ruleFailure.failure;
-    }
-
-    public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
-        return { text: "", actions: [] };
-    }
-
-}
-
-interface FixInfo {
-    text: string;
-    actions: Action[];
-}
-
-class CommentFormatError extends RecognizedError {
-
-    public static Name = "comment-format";
-
-    public static recognize(tsError: RuleFailure): CommentFormatError | null {
-        if (tsError.ruleName === this.Name) {
-            return new CommentFormatError(tsError);
-        }
-        return null;
-    }
-
-    constructor(tsError: RuleFailure) {
-        super(tsError,
-            { color: "#6020a0", usefulToShowLine: true });
-    }
-
-    // yeah ok I wish I had both previousContent and Location in the constructor instead
-    public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
-        const singleLineCommentFix = previousContent.replace(/\/\/(\S)/, "// $1");
-        if (singleLineCommentFix !== previousContent) {
-            return {
-                text: "Proposed fix: `" + singleLineCommentFix + "`",
-                actions: [buttonForCommand({ text: "Fix it" },
-                    "ReplaceLine", {
-                        "targets.owner": details.repo.owner,
-                        "targets.repo": details.repo.name,
-                        "targets.branch": details.branch,
-                        previousContent,
-                        "insert": singleLineCommentFix,
-                        "lineFrom1": location.lineFrom1,
-                        "message": "lint: comment format",
-                        "path": location.path,
-                    })],
-            };
-        } else {
-            return super.fix(details, location, previousContent);
-        }
-    }
-
-}
-
-function recognizeError(tsError: RuleFailure): RecognizedError {
-    return CommentFormatError.recognize(tsError) || new RecognizedError(tsError);
-}
 
 function findComplaints(push: WhereToLink, baseDir: string, tslintOutput: RuleFailure[]): Problem[] {
     if (!tslintOutput) {
@@ -606,13 +514,4 @@ export function runTslint(project: GitProject) {
         // I don't know why Status.Ok NPEs in mocha at the command line. It works in IntelliJ
         return { success: status === 0 /* Status.Ok */, errorOutput: JSON.parse(logs.join("\n")) as RuleFailure[] };
     });
-}
-
-export interface RuleFailure {
-    endPosition: { character: number, line: number };
-    startPosition: { character: number, line: number };
-    failure: string;
-    name: string;
-    ruleName: string;
-    ruleSeverity: string;
 }
