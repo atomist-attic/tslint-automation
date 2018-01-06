@@ -21,10 +21,10 @@ import * as graphql from "../typings/types";
 import { getFileContentFromProject } from "../util/getFileContent";
 import { BranchInRepoParameters } from "./BranchInRepoParameters";
 import { InsertAboveLineParameters } from "./InsertAboveLine";
+import { adminChannelId } from "../credentials";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];
-const me = ["jessica", "jessitron"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
 interface Analysis extends Details {
@@ -82,7 +82,7 @@ export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subs
         } as Details;
 
         if (skipThisCommitEntirely(push.after.message)) {
-            return ctx.messageClient.addressUsers(`Skipping entirely: ${linkToCommit(WhereToLink.fromPush(push))}`, me);
+            return ctx.messageClient.addressChannels(`Skipping entirely: ${linkToCommit(WhereToLink.fromPush(push))}`, adminChannelId);
         }
 
         const author: string = _.get(push, "after.author.person.chatId.screenName") ||
@@ -214,9 +214,9 @@ function sendNotification(project: Project, ctx: HandlerContext, details: Detail
                 , formatAnalysis(ctx, analysis)],
         };
 
-        return ctx.messageClient.addressUsers(
+        return ctx.messageClient.addressChannels(
             slackMessage,
-            me, { id: ctx.correlationId, ts: 2 });
+            adminChannelId, { id: ctx.correlationId, ts: 2 });
     }
 
     if (!analysis.lintable) {
@@ -306,21 +306,21 @@ function fields(shortOnes: string[], longOnes: string[], source: object) {
 function initialReportEvent(ctx: HandlerContext, push: graphql.PushToTsLinting.Push, author: string) {
     const whoami = `${configuration.name}:${configuration.version}`;
 
-    ctx.messageClient.addressUsers(
-        `${whoami}: ${author} made ${linkToCommit(WhereToLink.fromPush(push))}, message \`${push.after.message}\`. Linting`, me,
+    ctx.messageClient.addressChannels(
+        `${whoami}: ${author} made ${linkToCommit(WhereToLink.fromPush(push))}, message \`${push.after.message}\`. Linting`, adminChannelId,
         { id: ctx.correlationId, ts: 1 });
 }
 
 function initialReportCommand(ctx: HandlerContext, details: Details, author: string) {
     const whoami = `${configuration.name}:${configuration.version}`;
 
-    return ctx.messageClient.addressUsers(
-        `${whoami}: ${author} requested linting on ${linkToBranch(details)}. Linting`, me,
+    return ctx.messageClient.addressChannels(
+        `${whoami}: ${author} requested linting on ${linkToBranch(details)}. Linting`, adminChannelId,
         { id: ctx.correlationId, ts: 1 });
 }
 
 function reportError(ctx: HandlerContext, details: Details, error: Error) {
-    ctx.messageClient.addressUsers(`Uncaught error while linting ${linkToBranch(details)}: ` + error, me);
+    ctx.messageClient.addressChannels(`Uncaught error while linting ${linkToBranch(details)}: ` + error, adminChannelId);
 }
 
 class WhereToLink {

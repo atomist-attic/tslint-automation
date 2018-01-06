@@ -14,7 +14,7 @@ if (githubCredsFromCloudFoundry) {
 
 export const adminCreds = { token };
 export const adminSlackUserNames = ["jessica", "jessitron"];
-export const adminChannelId = "C8JUBSYKD";
+export const adminChannelId = "C8P0Z3YTE";
 export const adminGitHubUser = "jessitron";
 
 export let gitInfo = { sha: "unknown", branch: "unknown", repository: "unknown" };
