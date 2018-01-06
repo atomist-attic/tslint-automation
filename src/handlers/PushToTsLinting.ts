@@ -20,7 +20,7 @@ import { configuration } from "../atomist.config";
 import * as graphql from "../typings/types";
 import { getFileContentFromProject } from "../util/getFileContent";
 import { BranchInRepoParameters } from "./BranchInRepoParameters";
-import { InsertAboveLineParameters } from "./InsertAboveLine";
+import { InsertAboveLineParameters } from "./BittyEditors/InsertAboveLine";
 import { adminChannelId } from "../credentials";
 import { RuleFailure, Location } from "./aboutTsLint";
 import { RecognizedError, recognizeError } from "./recognizedErrors";

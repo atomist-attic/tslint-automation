@@ -1,10 +1,11 @@
-
 import { RuleFailure, WhereToFix, Location } from "./aboutTsLint";
 import { buttonForCommand } from "@atomist/automation-client/spi/message/MessageClient";
 import { Action } from "@atomist/slack-messages/SlackMessages";
 
 export function recognizeError(tsError: RuleFailure): RecognizedError {
-    return CommentFormatError.recognize(tsError) || new RecognizedError(tsError);
+    return CommentFormatError.recognize(tsError) ||
+        TripleEqualsError.recognize(tsError) ||
+        new RecognizedError(tsError);
 }
 
 
@@ -70,18 +71,101 @@ class CommentFormatError extends RecognizedError {
         const singleLineCommentFix = previousContent.replace(/\/\/(\S)/, "// $1");
         if (singleLineCommentFix !== previousContent) {
             return {
-                text: "Proposed fix: `" + singleLineCommentFix + "`",
-                actions: [buttonForCommand({ text: "Fix it" },
-                    "ReplaceLine", {
-                        "targets.owner": details.repo.owner,
-                        "targets.repo": details.repo.name,
-                        "targets.branch": details.branch,
-                        previousContent,
-                        "insert": singleLineCommentFix,
-                        "lineFrom1": location.lineFrom1,
-                        "message": "lint: comment format",
-                        "path": location.path,
-                    })],
+                text: "Proposed fix: `" + singleLineCommentFix.trim() + "`",
+                actions: [replaceButton({
+                    details, location, previousContent,
+                    newContent: singleLineCommentFix, message: "lint fix: single line comment",
+                })],
+            };
+        } else {
+            return super.fix(details, location, previousContent);
+        }
+    }
+}
+
+function replaceButton(specs: { details: WhereToFix, location: Location, previousContent: string, newContent: string, message: string }): Action {
+    return buttonForCommand({ text: "Fix it" },
+        "ReplaceLine", {
+            "targets.owner": specs.details.repo.owner,
+            "targets.repo": specs.details.repo.name,
+            "targets.branch": specs.details.branch,
+            previousContent: specs.previousContent,
+            "insert": specs.newContent,
+            "lineFrom1": specs.location.lineFrom1,
+            "message": specs.message,
+            "path": specs.location.path,
+        });
+}
+
+function deleteLineButton(specs: { details: WhereToFix, location: Location, previousContent: string, message: string }): Action {
+    return buttonForCommand({ text: "Fix it" },
+        "ReplaceLine", {
+            "targets.owner": specs.details.repo.owner,
+            "targets.repo": specs.details.repo.name,
+            "targets.branch": specs.details.branch,
+            previousContent: specs.previousContent,
+            "lineFrom1": specs.location.lineFrom1,
+            "message": specs.message,
+            "path": specs.location.path,
+        });
+}
+
+class TripleEqualsError extends RecognizedError {
+    public static Name = "triple-equals";
+
+    public static recognize(tsError: RuleFailure): TripleEqualsError | null {
+        if (tsError.ruleName === this.Name) {
+            return new TripleEqualsError(tsError);
+        }
+        return null;
+    }
+
+    constructor(tsError: RuleFailure) {
+        super(tsError,
+            { color: "#2040a0" });
+    }
+
+    public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
+        const easyFix = previousContent
+            .replace(/!=([^=])/g, "!==$1")
+            .replace(/([^!=])==([^=])/g, "$1===$2");
+        if (easyFix !== previousContent) {
+            return {
+                text: "Proposed fix: `" + easyFix.trim() + "`",
+                actions: [replaceButton({
+                    details, location, previousContent,
+                    newContent: easyFix, message: "lint fix: triple equals",
+                })],
+            };
+        } else {
+            return super.fix(details, location, previousContent);
+        }
+    }
+}
+
+class ConsoleLogError extends RecognizedError {
+    public static Name = "no-console";
+
+    public static recognize(tsError: RuleFailure): ConsoleLogError | null {
+        if (tsError.ruleName === this.Name) {
+            return new ConsoleLogError(tsError);
+        }
+        return null;
+    }
+
+    constructor(tsError: RuleFailure) {
+        super(tsError,
+            { color: "#f06000" });
+    }
+
+    public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
+        if (previousContent.endsWith(";")) {
+            return {
+                text: "Proposed fix: delete the line, or replace with a log statement",
+                actions: [deleteLineButton({
+                    details, location, previousContent,
+                    message: "lint fix: remove console.log",
+                })],
             };
         } else {
             return super.fix(details, location, previousContent);

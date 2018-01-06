@@ -3,15 +3,15 @@ import { Parameters } from "@atomist/automation-client/decorators";
 import { editorHandler } from "@atomist/automation-client/operations/edit/editorToCommand";
 import { failedEdit, ProjectEditor, successfulEdit } from "@atomist/automation-client/operations/edit/projectEditor";
 import { Project } from "@atomist/automation-client/project/Project";
-import { BranchInRepoParameters } from "./BranchInRepoParameters";
+import { BranchInRepoParameters } from "../BranchInRepoParameters";
 
-function insertAboveLine(path: string, lineFrom1: number, previousContent: string, insert: string): ProjectEditor {
+function deleteLine(path: string, lineFrom1: number, previousContent: string): ProjectEditor {
     return (p: Project) =>
         p.findFile(path).then(f => f.getContent().then(fileContents => {
             const currentContent = getLine(fileContents, lineFrom1);
             if (currentContent.trim() === currentContent.trim()) {
                 const whitespace = previousContent.match(/^\s*/);
-                return f.setContent(insertBefore(fileContents, lineFrom1, whitespace + insert))
+                return f.setContent(deleteOneLine(fileContents, lineFrom1))
                     .then(() => successfulEdit(p, true));
             } else {
                 return Promise.resolve(failedEdit(p,
@@ -20,14 +20,14 @@ function insertAboveLine(path: string, lineFrom1: number, previousContent: strin
         })).catch(error => failedEdit(p, error));
 }
 
-function insertBefore(previousLines: string, lineFrom1: number, newLine: string): string {
+function deleteOneLine(previousLines: string, lineFrom1: number): string {
     const lines = previousLines.split("\n");
     if (lines.length < lineFrom1) {
-        return `## oops, there are only ${lines.length} lines. Unable to insert before line ${lineFrom1}`;
+        return `## oops, there are only ${lines.length} lines. Unable to delete line ${lineFrom1}`;
     }
     const before = lines.slice(0, lineFrom1 - 1);
-    const after = lines.slice(lineFrom1 - 1);
-    return before.concat([newLine]).concat(after).join("\n");
+    const after = lines.slice(lineFrom1);
+    return before.concat(after).join("\n");
 }
 
 function getLine(content: string, lineFrom1: number) {
@@ -50,22 +50,19 @@ export class InsertAboveLineParameters {
     public previousContent: string;
 
     @Parameter()
-    public insert: string;
-
-    @Parameter()
     public message: string;
 
     public targets: BranchInRepoParameters = new BranchInRepoParameters();
 }
 
 export function insertAboveLineCommand(): HandleCommand {
-    return editorHandler<InsertAboveLineParameters>(params => insertAboveLine(params.path,
-        params.lineFrom1, params.previousContent, params.insert), InsertAboveLineParameters,
-        "InsertAboveLine", {
+    return editorHandler<InsertAboveLineParameters>(params => deleteLine(params.path,
+        params.lineFrom1, params.previousContent), InsertAboveLineParameters,
+        "DeleteLine", {
             editMode: p => ({
                 branch: p.targets.sha,
                 message: p.message,
             }),
-            intent: "insert line",
+            intent: "delete line",
         });
 }
