@@ -1,12 +1,11 @@
-import { HandleCommand, HandlerContext, logger, MappedParameter, MappedParameters, Parameter, Secret, Secrets, } from "@atomist/automation-client";
-import axios from "axios";
+import { HandleCommand, HandlerContext, logger, MappedParameter, MappedParameters, Parameter, Secret, Secrets } from "@atomist/automation-client";
 import { Parameters } from "@atomist/automation-client/decorators";
 import { commandHandlerFrom, OnCommand } from "@atomist/automation-client/onCommand";
 import * as slack from "@atomist/slack-messages/SlackMessages";
+import axios from "axios";
 import * as child_process from "child_process";
-import { whereAmIRunning } from "../util/provenance";
 import { adminCreds, adminGitHubUser } from "../credentials";
-
+import { whereAmIRunning } from "../util/provenance";
 
 function runCommandLine(cmd: string): Promise<{ stdout: string, stderr: string, error?: Error }> {
     return new Promise((resolve, reject) => {
@@ -37,17 +36,17 @@ export class SshParameters {
 
 const runAndReport: OnCommand<SshParameters> = (context: HandlerContext, params: SshParameters) => {
     if (params.authorization === adminCreds.token) {
-        return context.messageClient.respond("Nope. Got the same token this automation runs with.")
+        return context.messageClient.respond("Nope. Got the same token this automation runs with.");
     }
 
     return gitHubLogin(params.authorization).then(ghLogin => {
         if (ghLogin !== adminGitHubUser) {
-            return context.messageClient.respond("Nope. admins only")
+            return context.messageClient.respond("Nope. admins only");
         }
         return runCommand(params.cmd)
             .then(deployCmdOutput => reportCommandOutput(deployCmdOutput)
                 .then(message =>
-                    context.messageClient.respond(message)))
+                    context.messageClient.respond(message)));
     });
 };
 

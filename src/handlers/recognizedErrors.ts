@@ -1,6 +1,6 @@
-import { RuleFailure, WhereToFix, Location } from "./aboutTsLint";
 import { buttonForCommand } from "@atomist/automation-client/spi/message/MessageClient";
 import { Action } from "@atomist/slack-messages/SlackMessages";
+import { Location, RuleFailure, WhereToFix } from "./aboutTsLint";
 import { ReplaceConsoleLogWithLogger } from "./specializedEditor";
 
 export function recognizeError(tsError: RuleFailure): RecognizedError {
@@ -11,12 +11,10 @@ export function recognizeError(tsError: RuleFailure): RecognizedError {
         new RecognizedError(tsError);
 }
 
-
 export interface FixInfo {
     text: string;
     actions: Action[];
 }
-
 
 export class RecognizedError {
 
@@ -51,7 +49,6 @@ export class RecognizedError {
     }
 
 }
-
 
 class CommentFormatError extends RecognizedError {
 
@@ -92,7 +89,7 @@ function replaceButton(specs: { details: WhereToFix, location: Location, previou
             "targets.owner": specs.details.repo.owner,
             "targets.repo": specs.details.repo.name,
             "targets.branch": specs.details.branch,
-            previousContent: specs.previousContent,
+            "previousContent": specs.previousContent,
             "insert": specs.newContent,
             "lineFrom1": specs.location.lineFrom1,
             "message": specs.message,
@@ -106,7 +103,7 @@ function deleteLineButton(specs: { details: WhereToFix, location: Location, prev
             "targets.owner": specs.details.repo.owner,
             "targets.repo": specs.details.repo.name,
             "targets.branch": specs.details.branch,
-            previousContent: specs.previousContent,
+            "previousContent": specs.previousContent,
             "lineFrom1": specs.location.lineFrom1,
             "message": specs.message,
             "path": specs.location.path,
@@ -173,7 +170,7 @@ class ConsoleLogError extends RecognizedError {
                         "targets.owner": details.repo.owner,
                         "targets.repo": details.repo.name,
                         "targets.branch": details.branch,
-                        previousContent: previousContent,
+                        "previousContent": previousContent,
                         "lineFrom1": location.lineFrom1,
                         "message": "lint fix: replace console log with logger",
                         "path": location.path,
@@ -185,7 +182,6 @@ class ConsoleLogError extends RecognizedError {
     }
 
 }
-
 
 class ConstructorParentheses extends RecognizedError {
     public static Name = "new-parens";
@@ -219,5 +215,3 @@ class ConstructorParentheses extends RecognizedError {
     }
 
 }
-
-

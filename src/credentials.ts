@@ -1,8 +1,8 @@
 
 import * as cfenv from "cfenv";
 
-import * as appRoot from "app-root-path";
 import { logger } from "@atomist/automation-client";
+import * as appRoot from "app-root-path";
 
 const appEnv = cfenv.getAppEnv();
 const githubCredsFromCloudFoundry = appEnv.getServiceCreds("github-token");

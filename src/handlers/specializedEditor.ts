@@ -1,11 +1,11 @@
 import { HandleCommand, Parameter } from "@atomist/automation-client";
-import { editorHandler } from "@atomist/automation-client/operations/edit/editorToCommand";
 import { Parameters } from "@atomist/automation-client/decorators";
-import { BranchInRepoParameters } from "./BranchInRepoParameters";
-import { Project } from "@atomist/automation-client/project/Project";
-import { replaceLineInFile } from "./BittyEditors/ReplaceLine";
+import { editorHandler } from "@atomist/automation-client/operations/edit/editorToCommand";
 import { EditResult, ProjectEditor } from "@atomist/automation-client/operations/edit/projectEditor";
+import { Project } from "@atomist/automation-client/project/Project";
 import { addLineIfNotExists } from "./BittyEditors/AddLineIfNotExists";
+import { replaceLineInFile } from "./BittyEditors/ReplaceLine";
+import { BranchInRepoParameters } from "./BranchInRepoParameters";
 
 @Parameters()
 export class RemoveConsoleLogParameters {
@@ -41,7 +41,7 @@ export function replaceConsoleLogWithLoggerCommand(): HandleCommand {
 function replaceConsoleLogWithLogger(params: RemoveConsoleLogParameters): ProjectEditor {
     // tslint:disable-next-line:non-arrow-functions
     // tslint:disable-next-line:only-arrow-functions
-    return async function (p: Project) {
+    return async function(p: Project) {
         const newContent = params.previousContent.replace("console.log", "logger.info");
         const result1: EditResult = await replaceLineInFile(params.path, params.lineFrom1, params.previousContent, newContent)(p, undefined);
         if (result1.success && result1.edited) {
@@ -50,7 +50,7 @@ function replaceConsoleLogWithLogger(params: RemoveConsoleLogParameters): Projec
             return combineEditResults(result1, result2);
         }
         return result1;
-    }
+    };
 }
 
 function combineEditResults(result1: EditResult, result2: EditResult): EditResult {

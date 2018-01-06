@@ -7,9 +7,9 @@ import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
 import { commandHandlerFrom, OnCommand } from "@atomist/automation-client/onCommand";
 import * as slack from "@atomist/slack-messages/SlackMessages";
 import * as child_process from "child_process";
+import { adminSlackUserNames } from "../credentials";
 import * as graphql from "../typings/types";
 import { whereAmIRunning } from "../util/provenance";
-import { adminSlackUserNames } from "../credentials";
 
 const MyGitHubOrganization = "atomist";
 const MyGitHubRepository = "tslint-automation";

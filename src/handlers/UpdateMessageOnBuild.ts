@@ -3,8 +3,8 @@ import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
 import * as _ from "lodash";
 import * as graphql from "../typings/types";
 
-import * as stopBotheringMe from "./SelfConfigurate";
 import { adminSlackUserNames } from "../credentials";
+import * as stopBotheringMe from "./SelfConfigurate";
 
 @EventHandler("Update some messages when a build status arrives",
     subscriptionFromFile("graphql/subscription/anyBuild"))

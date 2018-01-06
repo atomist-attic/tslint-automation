@@ -17,12 +17,12 @@ import * as _ from "lodash";
 import * as path from "path";
 import { Options, run } from "tslint/lib/runner";
 import { configuration } from "../atomist.config";
+import { adminChannelId } from "../credentials";
 import * as graphql from "../typings/types";
 import { getFileContentFromProject } from "../util/getFileContent";
-import { BranchInRepoParameters } from "./BranchInRepoParameters";
+import { Location, RuleFailure } from "./aboutTsLint";
 import { InsertAboveLineParameters } from "./BittyEditors/InsertAboveLine";
-import { adminChannelId } from "../credentials";
-import { RuleFailure, Location } from "./aboutTsLint";
+import { BranchInRepoParameters } from "./BranchInRepoParameters";
 import { RecognizedError, recognizeError } from "./recognizedErrors";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "clay"];
@@ -374,7 +374,6 @@ function formatProblem(problem: Problem): string {
     return problem.recognizedError ? slack.bold(problem.recognizedError.name) + "" : problem.text;
 }
 
-
 function locate(baseDir: string, tsError: RuleFailure): Location | undefined {
 
     const lineFrom1 = tsError.startPosition.line + 1;
@@ -459,7 +458,6 @@ function getLine(content: string, lineFrom1: number) {
     }
     return lines[lineFrom1 - 1];
 }
-
 
 function findComplaints(push: WhereToLink, baseDir: string, tslintOutput: RuleFailure[]): Problem[] {
     if (!tslintOutput) {
