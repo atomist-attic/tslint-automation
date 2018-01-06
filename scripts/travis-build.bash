@@ -193,8 +193,8 @@ function main () {
     done
 
     msg "running compile"
-    if ! npm run compile; then
-        err "compilation failed"
+    if ! npm run build; then
+        err "build or compilation failed"
         return 1
     fi
 
