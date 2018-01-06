@@ -44,8 +44,6 @@
     "test": "mocha --compilers ts:espower-typescript/guess \"test/**/*.ts\"",
     "benchmark": "mocha --prof --compilers ts:espower-typescript/guess \"test/**/*Benchmark.ts\"; node --prof-process isolate-* > profile.txt",
     "start": "atomist start --no-install --no-compile",
-    "autostart": "npm-run-all --parallel watch:build watch:server --print-label",
-    "watch:build": "tsc --watch",
     "debug": "node $NODE_DEBUG_OPTION node_modules/@atomist/automation-client/start.client.js",
     "docker:build": "npm run build && docker build . -t automation-client-samples-ts-docker"
   },
