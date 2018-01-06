@@ -40,6 +40,7 @@ export function replaceConsoleLogWithLoggerCommand(): HandleCommand {
 
 function replaceConsoleLogWithLogger(params: RemoveConsoleLogParameters): ProjectEditor {
     // tslint:disable-next-line:non-arrow-functions
+    // tslint:disable-next-line:only-arrow-functions
     return async function (p: Project) {
         const newContent = params.previousContent.replace("console.log", "logger.info");
         const result1: EditResult = await replaceLineInFile(params.path, params.lineFrom1, params.previousContent, newContent)(p, undefined);
