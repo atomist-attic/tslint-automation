@@ -9,6 +9,8 @@ import { StopBotheringMe } from "./handlers/SelfConfigurate";
 import { UpdateMessageOnBuild } from "./handlers/UpdateMessageOnBuild";
 import { adminCreds } from "./credentials";
 import { sshCommand } from "./handlers/Ssh";
+import { deleteLineCommand } from "./handlers/BittyEditors/DeleteLine";
+import { replaceConsoleLogWithLoggerCommand } from "./handlers/specializedEditor";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
@@ -29,6 +31,8 @@ export const configuration: Configuration = {
         () => replaceLineCommand(),
         () => deployCommand(),
         () => sshCommand(),
+        () => deleteLineCommand(),
+        () => replaceConsoleLogWithLoggerCommand(),
     ],
     events: [
         () => new PushToTsLinting(),

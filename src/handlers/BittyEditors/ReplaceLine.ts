@@ -14,7 +14,7 @@ import { BranchInRepoParameters } from "../BranchInRepoParameters";
  * @param {string} newContent
  * @returns {ProjectEditor}
  */
-function replaceLineInFile(path: string, lineFrom1: number, previousContent: string, newContent: string): ProjectEditor {
+export function replaceLineInFile(path: string, lineFrom1: number, previousContent: string, newContent: string): ProjectEditor {
     return (p: Project) =>
         p.findFile(path).then(f => f.getContent().then(fileContents => {
             const currentContent = getLine(fileContents, lineFrom1);

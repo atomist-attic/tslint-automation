@@ -3,7 +3,7 @@
   "version": "0.1.34",
   "description": "Run tslint on commits to projects that support it",
   "dependencies": {
-    "@atomist/automation-client": "https://r.atomist.com/rkWglBbKT7G",
+    "@atomist/automation-client": "https://r.atomist.com/SyYgQbRp6QG",
     "@atomist/slack-messages": "^0.11.0",
     "@types/winston": "^2.3.7",
     "cfenv": "^1.0.4",

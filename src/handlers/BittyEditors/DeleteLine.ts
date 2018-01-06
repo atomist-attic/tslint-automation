@@ -39,7 +39,7 @@ function getLine(content: string, lineFrom1: number) {
 }
 
 @Parameters()
-export class InsertAboveLineParameters {
+export class DeleteLineParameters {
     @Parameter()
     public lineFrom1: number;
 
@@ -55,9 +55,9 @@ export class InsertAboveLineParameters {
     public targets: BranchInRepoParameters = new BranchInRepoParameters();
 }
 
-export function insertAboveLineCommand(): HandleCommand {
-    return editorHandler<InsertAboveLineParameters>(params => deleteLine(params.path,
-        params.lineFrom1, params.previousContent), InsertAboveLineParameters,
+export function deleteLineCommand(): HandleCommand {
+    return editorHandler<DeleteLineParameters>(params => deleteLine(params.path,
+        params.lineFrom1, params.previousContent), DeleteLineParameters,
         "DeleteLine", {
             editMode: p => ({
                 branch: p.targets.sha,

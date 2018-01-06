@@ -1,10 +1,13 @@
 import { RuleFailure, WhereToFix, Location } from "./aboutTsLint";
 import { buttonForCommand } from "@atomist/automation-client/spi/message/MessageClient";
 import { Action } from "@atomist/slack-messages/SlackMessages";
+import { ReplaceConsoleLogWithLogger } from "./specializedEditor";
 
 export function recognizeError(tsError: RuleFailure): RecognizedError {
     return CommentFormatError.recognize(tsError) ||
         TripleEqualsError.recognize(tsError) ||
+        ConsoleLogError.recognize(tsError) ||
+        ConstructorParentheses.recognize(tsError) ||
         new RecognizedError(tsError);
 }
 
@@ -98,8 +101,8 @@ function replaceButton(specs: { details: WhereToFix, location: Location, previou
 }
 
 function deleteLineButton(specs: { details: WhereToFix, location: Location, previousContent: string, message: string }): Action {
-    return buttonForCommand({ text: "Fix it" },
-        "ReplaceLine", {
+    return buttonForCommand({ text: "Delete line" },
+        "DeleteLine", {
             "targets.owner": specs.details.repo.owner,
             "targets.repo": specs.details.repo.name,
             "targets.branch": specs.details.branch,
@@ -161,10 +164,53 @@ class ConsoleLogError extends RecognizedError {
     public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
         if (previousContent.endsWith(";")) {
             return {
-                text: "Proposed fix: delete the line, or replace with a log statement",
+                text: "Proposed fix: delete the line, or replace it with a log statement",
                 actions: [deleteLineButton({
                     details, location, previousContent,
                     message: "lint fix: remove console.log",
+                }), buttonForCommand({ text: "log as INFO" },
+                    ReplaceConsoleLogWithLogger, {
+                        "targets.owner": details.repo.owner,
+                        "targets.repo": details.repo.name,
+                        "targets.branch": details.branch,
+                        previousContent: previousContent,
+                        "lineFrom1": location.lineFrom1,
+                        "message": "lint fix: replace console log with logger",
+                        "path": location.path,
+                    })],
+            };
+        } else {
+            return super.fix(details, location, previousContent);
+        }
+    }
+
+}
+
+
+class ConstructorParentheses extends RecognizedError {
+    public static Name = "new-parens";
+
+    public static recognize(tsError: RuleFailure): ConstructorParentheses | null {
+        if (tsError.ruleName === this.Name) {
+            return new ConstructorParentheses(tsError);
+        }
+        return null;
+    }
+
+    constructor(tsError: RuleFailure) {
+        super(tsError,
+            { color: "#e0a800" });
+    }
+
+    public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
+        const easyFix = previousContent
+            .replace(/(new \w+)([^\w(])/g, "$1()$2");
+        if (easyFix !== previousContent) {
+            return {
+                text: "Proposed fix: `" + easyFix.trim() + "`",
+                actions: [replaceButton({
+                    details, location, previousContent,
+                    newContent: easyFix, message: "lint fix: call constructor with parentheses",
                 })],
             };
         } else {
@@ -173,3 +219,5 @@ class ConsoleLogError extends RecognizedError {
     }
 
 }
+
+
