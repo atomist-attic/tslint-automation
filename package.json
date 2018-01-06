@@ -35,9 +35,8 @@
     "gql:gen": "gql-gen --file node_modules/@atomist/automation-client/graph/schema.cortex.json --template typescript --no-schema --out src/typings 'graphql/**/*.graphql'",
     "autotest": "supervisor -q -n exit -e ts -x npm -- run test",
     "clean": "rm -f *-v8.log; rm -f profile.txt; rm -rf build; rm -rf target",
-    "compile": "npm-run-all git:info compile:gql compile:ts",
-    "compile:gql": "npm-run-all gql:gen gql:copy",
-    "compile:ts": "tsc --project .",
+    "build": "npm-run-all git:info gql:gen gql:copy compile",
+    "compile": "tsc --project .",
     "fmt": "tsfmt --replace",
     "git:info": "atomist git",
     "lint": "tslint '**/*.ts' --exclude 'node_modules/**' --exclude 'build/**' -t verbose",
@@ -50,7 +49,7 @@
     "watch:build": "tsc --watch",
     "watch:server": "nodemon node_modules/@atomist/automation-client/start.client.js --watch './build'",
     "debug": "node $NODE_DEBUG_OPTION node_modules/@atomist/automation-client/start.client.js",
-    "docker:build": "npm run compile && docker build . -t automation-client-samples-ts-docker"
+    "docker:build": "npm run build && docker build . -t automation-client-samples-ts-docker"
   },
   "author": "Atomist, Inc.",
   "license": "GPL-3.0",

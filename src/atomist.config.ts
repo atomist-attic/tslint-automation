@@ -1,4 +1,3 @@
-import { logger } from "@atomist/automation-client";
 import { Configuration } from "@atomist/automation-client/configuration";
 import * as appRoot from "app-root-path";
 import { DeployAfterSuccessfulBuild, deployCommand } from "./handlers/DeploySelf";
@@ -15,8 +14,8 @@ import { sshCommand } from "./handlers/Ssh";
 const pj = require(`${appRoot}/package.json`);
 
 
-
-const teamIds = ["T29E48P34"];
+const AtomistCommunity = "T29E48P34";
+const teamIds = [AtomistCommunity];
 
 export const configuration: Configuration = {
     name: pj.name,
@@ -37,15 +36,8 @@ export const configuration: Configuration = {
         UpdateMessageOnBuild,
     ],
     token: adminCreds.token,
-    http: {
+    applicationEvents: {
+        teamId: AtomistCommunity,
         enabled: true,
-        auth: {
-            basic: {
-                enabled: false,
-            },
-            bearer: {
-                enabled: false,
-            },
-        },
     },
 };
