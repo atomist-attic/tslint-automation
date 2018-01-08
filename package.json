@@ -9,6 +9,7 @@
     "cfenv": "^1.0.4",
     "child-process-promise": "^2.2.1",
     "github": "^13.0.1",
+    "nodemon": "^1.14.9",
     "tslint": "^5.8.0"
   },
   "devDependencies": {
