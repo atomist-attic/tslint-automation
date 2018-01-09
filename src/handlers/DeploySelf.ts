@@ -7,7 +7,7 @@ import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
 import { commandHandlerFrom, OnCommand } from "@atomist/automation-client/onCommand";
 import * as slack from "@atomist/slack-messages/SlackMessages";
 import * as child_process from "child_process";
-import { adminSlackUserNames } from "../credentials";
+import { adminChannelId, adminSlackUserNames } from "../credentials";
 import * as graphql from "../typings/types";
 import { whereAmIRunning } from "../util/provenance";
 
@@ -26,9 +26,8 @@ export class DeployAfterSuccessfulBuild implements HandleEvent<graphql.Successfu
         if (build.repo.name !== MyGitHubRepository ||
             build.repo.owner !== MyGitHubOrganization ||
             build.push.branch !== "master") {
-            // my dm is gonna get even spammier
-            return context.messageClient.addressUsers(
-                `There was ${slack.url(build.buildUrl, "a successful build")}, but it wasn't mine`, adminSlackUserNames)
+            return context.messageClient.addressChannels(
+                `There was ${slack.url(build.buildUrl, "a successful build")}, but it wasn't mine`, adminChannelId)
                 .then(() => Promise.resolve(Success));
         }
         return context.messageClient.addressUsers("I would now like to deploy tag " + build.name, adminSlackUserNames)
