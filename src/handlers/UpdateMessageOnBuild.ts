@@ -4,7 +4,7 @@ import * as _ from "lodash";
 import * as graphql from "../typings/types";
 
 import { adminSlackUserNames } from "../credentials";
-import * as stopBotheringMe from "./SelfConfigurate";
+import * as stopBotheringMe from "./Configuration/SelfConfigurate";
 
 @EventHandler("Update some messages when a build status arrives",
     subscriptionFromFile("graphql/subscription/anyBuild"))

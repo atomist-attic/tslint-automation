@@ -7,10 +7,11 @@ import { replaceLineCommand } from "./handlers/BittyEditors/ReplaceLine";
 import { DeployAfterSuccessfulBuild, deployCommand } from "./handlers/DeploySelf";
 import { HelloWorld } from "./handlers/HelloWorld";
 import { PleaseLint, PushToTsLinting } from "./handlers/PushToTsLinting";
-import { StopBotheringMe } from "./handlers/SelfConfigurate";
+import { StopBotheringMe } from "./handlers/Configuration/SelfConfigurate";
 import { replaceConsoleLogWithLoggerCommand } from "./handlers/specializedEditor";
 import { sshCommand } from "./handlers/Ssh";
 import { UpdateMessageOnBuild } from "./handlers/UpdateMessageOnBuild";
+import { reportConfigurationCommand } from "./handlers/Configuration/ReportConfiguration";
 
 // tslint:disable-next-line:no-var-requires
 const pj = require(`${appRoot}/package.json`);
@@ -32,6 +33,7 @@ export const configuration: Configuration = {
        // () => sshCommand(),
         () => deleteLineCommand(),
         () => replaceConsoleLogWithLoggerCommand(),
+        () => reportConfigurationCommand,
     ],
     events: [
         () => new PushToTsLinting(),
