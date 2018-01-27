@@ -29,7 +29,7 @@ export const configuration: Configuration = {
         () => insertAboveLineCommand(),
         () => replaceLineCommand(),
         () => deployCommand(),
-        () => sshCommand(),
+       // () => sshCommand(),
         () => deleteLineCommand(),
         () => replaceConsoleLogWithLoggerCommand(),
     ],
