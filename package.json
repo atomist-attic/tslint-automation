@@ -2,6 +2,7 @@
   "name": "@atomist/tslint-automation",
   "version": "0.1.36",
   "description": "Run tslint on commits to projects that support it",
+  "repository": "https://github.com/atomist/tslint-automation",
   "dependencies": {
     "@atomist/automation-client": "https://r.atomist.com/SyYgQbRp6QG",
     "@atomist/slack-messages": "^0.11.0",

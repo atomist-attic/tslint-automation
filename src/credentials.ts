@@ -24,3 +24,5 @@ try {
 } catch (e) {
     logger.warn("Did not locate git-info.json");
 }
+
+export const packageJson = require(`${appRoot}/package.json`);
