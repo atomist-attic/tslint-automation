@@ -27,7 +27,7 @@ export class DeployAfterSuccessfulBuild implements HandleEvent<graphql.Successfu
             build.repo.owner !== MyGitHubOrganization ||
             build.push.branch !== "master") {
             await context.messageClient.addressChannels(
-                `There was ${slack.url(build.buildUrl, "a successful build")}, but it wasn't mine`, adminChannelId); 
+                `There was ${slack.url(build.buildUrl, "a successful build")}, but it wasn't mine`, adminChannelId);
             return Success;
         }
         await context.messageClient.addressUsers("I am now going to deploy tag " + build.name, adminSlackUserNames);
