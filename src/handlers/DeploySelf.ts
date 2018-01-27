@@ -18,20 +18,22 @@ const MyGitHubRepository = "tslint-automation";
     subscriptionFromFile("graphql/successfulBuild"))
 export class DeployAfterSuccessfulBuild implements HandleEvent<graphql.SuccessfulBuild.Subscription> {
 
-    public handle(event: EventFired<graphql.SuccessfulBuild.Subscription>,
-                  context: HandlerContext): Promise<HandlerResult> {
+    public async handle(event: EventFired<graphql.SuccessfulBuild.Subscription>,
+                        context: HandlerContext): Promise<HandlerResult> {
 
         const build = event.data.Build[0];
 
         if (build.repo.name !== MyGitHubRepository ||
             build.repo.owner !== MyGitHubOrganization ||
             build.push.branch !== "master") {
-            return context.messageClient.addressChannels(
-                `There was ${slack.url(build.buildUrl, "a successful build")}, but it wasn't mine`, adminChannelId)
-                .then(() => Promise.resolve(Success));
+            await context.messageClient.addressChannels(
+                `There was ${slack.url(build.buildUrl, "a successful build")}, but it wasn't mine`, adminChannelId); 
+            return Success;
         }
-        return context.messageClient.addressUsers("I would now like to deploy tag " + build.name, adminSlackUserNames)
-            .then(() => Success);
+        await context.messageClient.addressUsers("I am now going to deploy tag " + build.name, adminSlackUserNames);
+        const params = new DeploySelfParameters();
+        params.dockerImageTag = build.name;
+        return deployAndReport(context, params);
     }
 }
 
