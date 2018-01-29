@@ -33,6 +33,24 @@ export function addPersonWhoDoesNotWantMeToOfferToHelp(person: string): ProjectE
     };
 }
 
+export function removePersonWhoDoesNotWantMeToOfferToHelp(person: string): ProjectEditor {
+    return (project: Project) => {
+// TODO: make this use TS AST so linebreaks won't bother it
+        return project.findFile("src/handlers/PushToTsLinting.ts").then(
+            f => f.getContent().then(content => {
+                if (content.match(whereToAdd)) {
+                    return f.setContent(content.replace(
+                        // how do I put $0 in the replacement? maybe ya hafta put it in a group
+                        /PeopleWhoDoNotWantMeToOfferToHelp(.*)"${person}",?/,
+                        `PeopleWhoDoNotWantMeToOfferToHelp$1`))
+                        .then(() => successfulEdit(project, true));
+                } else {
+                    return Promise.resolve(failedEdit(project, new Error("Didn't find the place to add them")));
+                }
+            }), findFileError => Promise.resolve(failedEdit(project, findFileError)));
+    };
+}
+
 @Parameters()
 export class StopBotheringMeParams {
     @MappedParameter(MappedParameters.SlackUserName)
@@ -89,8 +107,48 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
     public freshParametersInstance(): StopBotheringMeParams {
         return new StopBotheringMeParams();
     }
-
 }
+
+
+@CommandHandler("Start offering to help the invoking user", "start offering to help with linting errors")
+export class DoOfferToHelp implements HandleCommand<StopBotheringMeParams> {
+
+    public handle(context: HandlerContext, parameters: StopBotheringMeParams): Promise<HandlerResult> {
+        const messageId = "stop-bothering-" + parameters.screenName;
+        const reportError = reportErrorFunction(context, parameters);
+        // someday, parse reporef from package json
+        return initialReport(context, parameters)
+            .then(() => context.messageClient.respond(
+                "OK. I'll update my program and offer to help when I can."))
+            .then(() =>
+                GitCommandGitProject.cloned(adminCreds, new GitHubRepoRef(MyGitHubOrganization, MyGitHubRepository)))
+            .then(project => removePersonWhoDoesNotWantMeToOfferToHelp(parameters.screenName)(project, context)
+                    .then(editResult => {
+                            if (editResult.success && editResult.edited) {
+                                return project.commit(`${parameters.screenName} wants me to offer to help
+
+[atomist:${messageId}]`)
+                                    .then(() => project.push(), reportError("commit failed"))
+                                    .then(() => project.gitStatus(), reportError("push failed"))
+                                    .then((gs: GitStatus) =>
+                                            reportProgress(context, parameters.screenName, messageId, { sha: gs.sha })
+                                                .then(() => ({ pushed: true, editResult, messageId, sha: gs.sha })),
+                                        reportError("git status failed"));
+                            } else {
+                                return Promise.resolve({ pushed: false, editResult, messageId });
+                            }
+                        },
+                        reportError("editor threw an exception"))
+                    .then(analysis => finalReport(context, parameters, analysis)),
+                reportError("Failed to clone"))
+            .then(() => Success, error => Failure);
+    }
+
+    public freshParametersInstance(): StopBotheringMeParams {
+        return new StopBotheringMeParams();
+    }
+}
+
 
 export function isMine(commit: { message: string }): boolean {
     logger.info("considering commit message: " + commit.message);
