@@ -75,7 +75,8 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
 
     public handle(context: HandlerContext, parameters: StopBotheringMeParams): Promise<HandlerResult> {
         const messageId = "stop-bothering-" + parameters.screenName;
-        const reportError = reportErrorFunction(context, parameters);
+        const me = { commandName: "StopBotheringMe"};
+        const reportError = reportErrorFunction(context, parameters, me);
         // someday, parse reporef from package json
         return initialReport(context, parameters)
             .then(() => context.messageClient.respond(
@@ -114,7 +115,8 @@ export class DoOfferToHelp implements HandleCommand<StopBotheringMeParams> {
 
     public handle(context: HandlerContext, parameters: StopBotheringMeParams): Promise<HandlerResult> {
         const messageId = "stop-bothering-" + parameters.screenName;
-        const reportError = reportErrorFunction(context, parameters);
+        const me = { commandName: "DoOfferToHelp"};
+        const reportError = reportErrorFunction(context, parameters, me);
         // someday, parse reporef from package json
         return initialReport(context, parameters)
             .then(() => context.messageClient.respond(
@@ -198,7 +200,7 @@ function linkToCommit(details: { sha?: string }): string {
     }
 }
 
-function reportErrorFunction(context: HandlerContext, parameters: StopBotheringMeParams) {
+function reportErrorFunction(context: HandlerContext, parameters: StopBotheringMeParams, opts: { commandName: string}) {
     return (message: string) => (error: Error) => {
         const attachment: slack.Attachment = {
             fallback: "report",
@@ -207,7 +209,7 @@ function reportErrorFunction(context: HandlerContext, parameters: StopBotheringM
                 { error, message }),
         };
         const slackMessage: slack.SlackMessage = {
-            text: `${parameters.screenName} invoked StopBotheringMe.`,
+            text: `${parameters.screenName} invoked ${opts.commandName}.`,
             attachments: [attachment],
         };
         return context.messageClient.addressUsers(slackMessage, adminSlackUserNames, { id: context.correlationId })

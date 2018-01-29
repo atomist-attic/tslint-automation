@@ -3,7 +3,7 @@ import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
 import * as _ from "lodash";
 import * as graphql from "../typings/types";
 
-import { adminSlackUserNames } from "../credentials";
+import { adminChannelId, adminSlackUserNames } from "../credentials";
 import * as stopBotheringMe from "./Configuration/SelfConfigurate";
 
 @EventHandler("Update some messages when a build status arrives",
@@ -19,7 +19,7 @@ export class UpdateMessageOnBuild implements HandleEvent<graphql.BuildFromPush.S
             const author = _.get(build, "commit.author.person.chatId.screenName",
                 build.commit.author.login);
 
-            return context.messageClient.addressUsers("recognized a build", adminSlackUserNames)
+            return context.messageClient.addressChannels("recognized a build for stop-bothering-me", adminChannelId)
                 .then(() => stopBotheringMe.reportProgress(context, author,
                     stopBotheringMe.parseMessageId(build.commit.message), {
                         sha: build.commit.sha,
