@@ -109,7 +109,6 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
     }
 }
 
-
 @CommandHandler("Start offering to help the invoking user", "start offering to help with linting errors")
 export class DoOfferToHelp implements HandleCommand<StopBotheringMeParams> {
 
@@ -148,7 +147,6 @@ export class DoOfferToHelp implements HandleCommand<StopBotheringMeParams> {
         return new StopBotheringMeParams();
     }
 }
-
 
 export function isMine(commit: { message: string }): boolean {
     logger.info("considering commit message: " + commit.message);
