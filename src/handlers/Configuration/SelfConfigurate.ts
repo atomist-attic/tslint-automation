@@ -136,7 +136,7 @@ export class DoOfferToHelp implements HandleCommand<StopBotheringMeParams> {
             await finalReport(context, parameters, me,
                 { pushed: true, editResult, messageId, sha: gs.sha });
         } else {
-            await finalReport(context, parameters,me,  { pushed: false, editResult, messageId });
+            await finalReport(context, parameters, me,  { pushed: false, editResult, messageId });
         }
         return Success;
     }
