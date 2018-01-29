@@ -30,7 +30,7 @@ export class DeployAfterSuccessfulBuild implements HandleEvent<graphql.Successfu
                 `There was ${slack.url(build.buildUrl, "a successful build")}, but it wasn't mine`, adminChannelId);
             return Success;
         }
-        await context.messageClient.addressUsers("I am now going to deploy tag " + build.name, adminSlackUserNames);
+        await context.messageClient.addressChannels("I am now going to deploy tag " + build.name, adminChannelId);
         const params = new DeploySelfParameters();
         params.dockerImageTag = build.name;
         return deployAndReport(context, params);
