@@ -26,11 +26,11 @@ import * as appRoot from "app-root-path";
 import * as _ from "lodash";
 import "mocha";
 import * as assert from "power-assert";
+import { addPersonWhoDoesNotWantMeToOfferToHelp } from "../src/handlers/Configuration/SelfConfigurate";
 import {
     lintingIsWanted, PeopleWhoDoNotWantMeToOfferToHelp, PeopleWhoWantLintingOnTheirBranches,
     shouldOfferToHelp,
 } from "../src/handlers/PushToTsLinting";
-import { addPersonWhoDoesNotWantMeToOfferToHelp } from "../src/handlers/Configuration/SelfConfigurate";
 
 describe("Before I can even ask, people have to be able to tell me not to offer", () => {
     it("does not offer to make a commit for an author in the grouchy list", () => {

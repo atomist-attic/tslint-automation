@@ -1,9 +1,9 @@
-import { commandHandlerFrom } from "@atomist/automation-client/onCommand";
 import { HandleCommand, HandlerContext, Success } from "@atomist/automation-client";
 import { Parameters } from "@atomist/automation-client/decorators";
-import { PeopleWhoDoNotWantMeToOfferToHelp, PeopleWhoWantLintingOnTheirBranches } from "../PushToTsLinting";
+import { commandHandlerFrom } from "@atomist/automation-client/onCommand";
 import * as slack from "@atomist/slack-messages/SlackMessages";
 import { adminSlackUserNames, packageJson } from "../../credentials";
+import { PeopleWhoDoNotWantMeToOfferToHelp, PeopleWhoWantLintingOnTheirBranches } from "../PushToTsLinting";
 
 @Parameters()
 export class ReportConfigurationParams {
