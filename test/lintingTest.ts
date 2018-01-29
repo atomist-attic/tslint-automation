@@ -13,8 +13,7 @@ describe("can we lint the thing?", () => {
         GitCommandGitProject.cloned(GitHubCredentials, new GitHubRepoRef("atomist", "upgrade-client-automation"))
             .then(project => runTslint(project))
             .then(result => {
-                assert(!result.success);
-                console.log(stringify(result));
+                assert(!result.success, stringify(result));
             })
             .then(() => done(), done);
     }).timeout(100000);
