@@ -16,7 +16,7 @@ export class BranchInRepoParameters extends GitHubTargetsParams {
     @MappedParameter(MappedParameters.GitHubRepository)
     public repo: string;
 
-    @Parameter({ description: "Branch. Defaults to 'master'", ...GitBranchRegExp, required: false })
+    @Parameter({ description: "Branch. Defaults to 'master'", required: false })
     public branch: string = "master";
 
     get sha() {
