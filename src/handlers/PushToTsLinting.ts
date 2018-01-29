@@ -29,7 +29,7 @@ import { BranchInRepoParameters } from "./BranchInRepoParameters";
 import { RecognizedError, recognizeError } from "./recognizedErrors";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "clay"];
-export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];
+export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "the-grinch"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
 interface Analysis extends Details {
