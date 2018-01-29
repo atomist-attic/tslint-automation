@@ -498,7 +498,6 @@ export function runTslint(project: GitProject) {
         project: project.baseDir,
         format: "json",
         outputAbsolutePaths: false,
-        files: ["**/*.ts"]
     };
     const errors: string[] = [];
     const logs: string[] = [];
