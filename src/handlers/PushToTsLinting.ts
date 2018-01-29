@@ -1,4 +1,7 @@
-import { CommandHandler, EventFired, HandleCommand, HandleEvent, HandlerContext, HandlerResult, Secrets } from "@atomist/automation-client";
+import {
+    CommandHandler, EventFired, failure, Failure, HandleCommand, HandleEvent, HandlerContext, HandlerResult,
+    Secrets,
+} from "@atomist/automation-client";
 import { EventHandler, Secret } from "@atomist/automation-client/decorators";
 import * as GraphQL from "@atomist/automation-client/graph/graphQL";
 import { logger } from "@atomist/automation-client/internal/util/logger";
@@ -321,8 +324,9 @@ function initialReportCommand(ctx: HandlerContext, details: Details, author: str
         { id: ctx.correlationId, ts: 1 });
 }
 
-function reportError(ctx: HandlerContext, details: Details, error: Error) {
-    ctx.messageClient.addressChannels(`Uncaught error while linting ${linkToBranch(details)}: ` + error, adminChannelId);
+async function reportError(ctx: HandlerContext, details: Details, error: Error) {
+    await ctx.messageClient.addressChannels(`Uncaught error while linting ${linkToBranch(details)}: ` + error, adminChannelId);
+    return failure(error);
 }
 
 class WhereToLink {
