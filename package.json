@@ -2,11 +2,26 @@
   "name": "@atomist/tslint-automation",
   "version": "0.1.36",
   "description": "Run tslint on commits to projects that support it",
-  "repository": "https://github.com/atomist/tslint-automation",
+  "author": "Atomist, Inc.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atomist/tslint-automation.git"
+  },
+  "homepage": "https://github.com/atomist/tslint-automation#readme",
+  "bugs": {
+    "url": "https://github.com/atomist/tslint-automation/issues"
+  },
+  "keywords": [
+    "atomist",
+    "typescript",
+    "tslint"
+  ],
   "dependencies": {
-    "@atomist/automation-client": "https://r.atomist.com/SyYgQbRp6QG",
+    "@atomist/automation-client": "^0.6.6",
     "@atomist/slack-messages": "^0.11.0",
     "@types/winston": "^2.3.7",
+    "axios": "^0.18.0",
     "cfenv": "^1.0.4",
     "child-process-promise": "^2.2.1",
     "github": "^13.0.1",
@@ -17,14 +32,16 @@
     "@types/mocha": "^2.2.44",
     "@types/node": "^8.0.53",
     "@types/power-assert": "^1.4.29",
+    "copyfiles": "^1.2.0",
     "espower-typescript": "^8.1.2",
     "graphql-code-generator": "^0.8.14",
     "mocha": "^3.5.3",
     "npm-run-all": "^4.1.2",
     "power-assert": "^1.4.4",
+    "rimraf": "^2.6.2",
     "supervisor": "^0.12.0",
     "ts-node": "^3.3.0",
-    "copyfiles": "^1.2.0",
+    "typedoc": "^0.10.0",
     "typescript": "2.5.2",
     "typescript-formatter": "^6.1.0"
   },
@@ -32,27 +49,33 @@
     "test": "test"
   },
   "scripts": {
-    "gql:copy": "copyfiles 'src/**/*.graphql' build",
-    "gql:gen": "gql-gen --file node_modules/@atomist/automation-client/graph/schema.cortex.json --template typescript --no-schema --out src/typings 'graphql/**/*.graphql'",
-    "autotest": "supervisor -q -n exit -e ts -x npm -- run test",
-    "clean": "rm -f *-v8.log; rm -f profile.txt; rm -rf build; rm -rf target",
-    "build": "npm-run-all git:info gql:gen gql:copy compile",
-    "compile": "tsc --project .",
+    "autostart": "nodemon --watch src --ext ts --exec ts-node -- node_modules/@atomist/automation-client/start.client.js",
+    "autotest": "supervisor --watch src,test --extensions ts --no-restart-on exit --quiet --exec npm -- test",
+    "build": "npm-run-all lint compile test typedoc",
+    "clean": "npm-run-all clean:js clean:build",
+    "clean:build": "npm-run-all clean:gql clean:ts clean:run",
+    "clean:dist": "npm-run-all clean clean:npm",
+    "clean:gql": "rimraf src/typings/types.ts",
+    "clean:js": "rimraf \"{src,test}/**/*.js\"",
+    "clean:npm": "rimraf node_modules",
+    "clean:run": "rimraf *-v8.log profile.txt build",
+    "clean:ts": "rimraf build",
+    "compile": "npm-run-all git:info compile:gql compile:ts",
+    "compile:gql": "npm-run-all gql:gen gql:copy",
+    "compile:ts": "tsc --project .",
     "fmt": "tsfmt --replace",
     "git:info": "atomist git",
-    "lint": "tslint '**/*.ts' --exclude 'node_modules/**' --exclude 'build/**' -t verbose",
-    "lint-fix": "tslint --fix '**/*.ts' --exclude 'node_modules/**' --exclude 'build/**' -t verbose",
-    "testone": "mocha --compilers ts:espower-typescript/guess \"test/**/${TEST:-*.ts}\"",
-    "test": "mocha --compilers ts:espower-typescript/guess \"test/**/*.ts\"",
-    "benchmark": "mocha --prof --compilers ts:espower-typescript/guess \"test/**/*Benchmark.ts\"; node --prof-process isolate-* > profile.txt",
+    "gql:copy": "copyfiles \"src/**/*.graphql\" build",
+    "gql:gen": "atomist gql-gen \"{graphql,src}/**/*.graphql\"",
+    "lint": "tslint --format verbose --project . --exclude \"{build,node_modules}/**\" \"**/*.ts\"",
+    "lint:fix": "npm run lint -- --fix",
     "start": "atomist start --no-install --no-compile",
-    "debug": "node $NODE_DEBUG_OPTION node_modules/@atomist/automation-client/start.client.js",
-    "docker:build": "npm run build && docker build . -t automation-client-samples-ts-docker"
+    "test": "mocha --require espower-typescript/guess \"test/**/*.ts\"",
+    "test:one": "mocha --require espower-typescript/guess \"test/**/${TEST:-*.ts}\"",
+    "typedoc": "typedoc --mode modules --excludeExternals --out build/typedoc src"
   },
-  "author": "Atomist, Inc.",
-  "license": "GPL-3.0",
   "engines": {
-    "node": "8.9.x",
-    "npm": "5.3.x"
+    "node": "9.x.x",
+    "npm": "5.x.x"
   }
 }
