@@ -1,6 +1,6 @@
 import {
     CommandHandler, EventFired, failure, Failure, HandleCommand, HandleEvent, HandlerContext, HandlerResult,
-    Secrets,
+    logger, Secrets,
 } from "@atomist/automation-client";
 import { EventHandler, Secret } from "@atomist/automation-client/decorators";
 import * as GraphQL from "@atomist/automation-client/graph/graphQL";
@@ -503,16 +503,16 @@ export function runTslint(project: GitProject) {
     const logs: string[] = [];
     const loggo = {
         log(str) {
-            console.debug("Log: " + str);
+            logger.debug("Log: " + str);
             logs.push(str);
         },
         error(str) {
-            console.debug("err: " + str);
+            logger.debug("err: " + str);
             errors.push(str);
         },
     };
     return run(options, loggo).then(status => {
-        console.log("returned from run");
+        logger.info("returned from run");
         // I don't know why Status.Ok NPEs in mocha at the command line. It works in IntelliJ
         return { success: status === 0 /* Status.Ok */, errorOutput: JSON.parse(logs.join("\n")) as RuleFailure[] };
     });
