@@ -21,5 +21,5 @@ describe("can we lint the thing?", () => {
                 assert(!result.success, stringify(result));
             })
             .then(() => done(), done);
-    }).timeout(100000);
+    }).timeout(120000);
 });

@@ -29,7 +29,7 @@ import { BranchInRepoParameters } from "./BranchInRepoParameters";
 import { RecognizedError, recognizeError } from "./recognizedErrors";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "clay"];
-export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica",  "the-grinch"];
+export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "the-grinch"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
 interface Analysis extends Details {
@@ -246,12 +246,12 @@ function sendNotification(project: Project, ctx: HandlerContext, details: Detail
         return problemsToAttachments(project, analysis, WhereToLink.fromDetails(details, analysis.commit.sha), analysis.problems)
             .then(attachments =>
                 ctx.messageClient.addressUsers({
-                        text:
-                            `Bad news: there are ${analysis.problems.length} tricky linting errors on ${
-                                linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha),
-                                    "your commit")} to ${details.repo.name}#${details.branch}.`,
-                        attachments,
-                    },
+                    text:
+                    `Bad news: there are ${analysis.problems.length} tricky linting errors on ${
+                    linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha),
+                        "your commit")} to ${details.repo.name}#${details.branch}.`,
+                    attachments,
+                },
                     analysis.author, identifyMessage(analysis)))
             .then(() => reportToMe("I told them to fix it themselves"));
     }
@@ -266,7 +266,7 @@ function offerToHelp(context: HandlerContext, analysis: Analysis): Promise<void>
 
     const slackMessage: slack.SlackMessage = {
         text: `There are linting errors on your ${
-            linkToCommit(WhereToLink.fromDetails(analysis, analysis.commit.sha))}. Would you like me to fix them for you?`,
+        linkToCommit(WhereToLink.fromDetails(analysis, analysis.commit.sha))}. Would you like me to fix them for you?`,
         attachments: [{
             fallback: "buttons", actions: [
                 buttonForCommand({ text: "Fix it" },
@@ -295,7 +295,7 @@ function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachme
         fallback: "analysis goes here",
         text: analysis.problems ? analysis.problems.map(formatProblem).join("\n") : "No problems",
         fields: fields(["author", "personWantsMyHelp", "specificallyRequested",
-                "lintable", "happy", "changed", "pushed"],
+            "lintable", "happy", "changed", "pushed"],
             ["status.raw", "error"], analysis),
         footer: ctx.correlationId,
     };
@@ -503,11 +503,11 @@ export function runTslint(project: GitProject) {
     const logs: string[] = [];
     const loggo = {
         log(str) {
-            console.log("Log: " + str);
+            console.debug("Log: " + str);
             logs.push(str);
         },
         error(str) {
-            console.log("err: " + str);
+            console.debug("err: " + str);
             errors.push(str);
         },
     };
