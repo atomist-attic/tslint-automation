@@ -1,6 +1,6 @@
 {
   "name": "@atomist/tslint-automation",
-  "version": "0.1.36",
+  "version": "0.1.37",
   "description": "Run tslint on commits to projects that support it",
   "author": "Atomist, Inc.",
   "license": "Apache-2.0",
