@@ -60,7 +60,7 @@
     "clean:npm": "rimraf node_modules",
     "clean:run": "rimraf *-v8.log profile.txt build",
     "clean:ts": "rimraf build",
-    "compile": "npm-run-all git:info compile:gql compile:ts",
+    "compile": "npm-run-all git:info  compile:ts",
     "compile:gql": "npm-run-all gql:gen gql:copy",
     "compile:ts": "tsc --project .",
     "fmt": "tsfmt --replace",
