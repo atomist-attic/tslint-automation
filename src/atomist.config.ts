@@ -17,7 +17,7 @@ import { UpdateMessageOnBuild } from "./handlers/UpdateMessageOnBuild";
 const pj = require(`${appRoot}/package.json`);
 
 const AtomistCommunity = "T29E48P34";
-const teamIds = [AtomistCommunity];
+const teamIds = [process.env.ATOMIST_TEAM || AtomistCommunity];
 
 export const configuration: Configuration = {
     name: pj.name,
