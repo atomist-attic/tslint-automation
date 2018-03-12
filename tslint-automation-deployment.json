@@ -81,11 +81,11 @@
             "resources": {
               "limits": {
                 "cpu": 0.5,
-                "memory": "160Mi"
+                "memory": "260Mi"
               },
               "requests": {
                 "cpu": 0.1,
-                "memory": "128Mi"
+                "memory": "228Mi"
               }
             }
           }
