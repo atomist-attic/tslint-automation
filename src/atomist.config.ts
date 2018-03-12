@@ -46,5 +46,5 @@ export const configuration: Configuration = {
         teamId: AtomistCommunity,
         enabled: true,
     },
-    http: { enabled: false },
+    http: { enabled: true },
 };
