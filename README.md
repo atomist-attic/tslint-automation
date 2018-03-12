@@ -86,6 +86,19 @@ Command | Reason
 `npm run docker:build` | run a compile and docker build
 `npm start` | start up the automation client
 
+### Running in K8s
+
+set up the secret in the cluster:
+
+`kubectl create secret generic tslint-token --from-literal=github=$GITHUB_TOKEN`
+
+create the deployment:
+
+`kubectl create -f tslint-automation-deployment.json`
+
+set the image:
+`kubectl set image deployment/tslint-automation tslint-automation=atomist/tslint-automation:0.1.40-20180304101845`
+
 ### Release
 
 To create a new release of the project, simply push a tag of the form
