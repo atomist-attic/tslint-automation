@@ -61,10 +61,10 @@
                 "scheme": "HTTP"
               },
               "initialDelaySeconds": 20,
-              "timeoutSeconds": 3,
-              "periodSeconds": 20,
+              "timeoutSeconds": 30,
+              "periodSeconds": 60,
               "successThreshold": 1,
-              "failureThreshold": 3
+              "failureThreshold": 7
             },
             "readinessProbe": {
               "httpGet": {
