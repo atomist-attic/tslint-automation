@@ -42,6 +42,9 @@ export const configuration: Configuration = {
         UpdateMessageOnBuild,
     ],
     token: adminCreds.token,
+    cluster: {
+        enabled: true,
+    },
     applicationEvents: {
         teamId: AtomistCommunity,
         enabled: true,
