@@ -510,9 +510,13 @@ export function runTslint(project: GitProject) {
             errors.push(str);
         },
     };
+    logger.info("Starting tslint...");
     return run(options, loggo).then(status => {
         logger.info("returned from run");
         // I don't know why Status.Ok NPEs in mocha at the command line. It works in IntelliJ
         return { success: status === 0 /* Status.Ok */, errorOutput: JSON.parse(logs.join("\n")) as RuleFailure[] };
+    }, err => {
+        logger.warn("Error running tslint! %s", err.message);
+        return { success: false, errorOutput: null }
     });
 }
