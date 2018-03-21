@@ -28,7 +28,7 @@ import { BranchInRepoParameters } from "./BranchInRepoParameters";
 import { RecognizedError, recognizeError } from "./recognizedErrors";
 
 export const PeopleWhoWantLintingOnTheirBranches = ["cd", "clay"];
-export const PeopleWhoDoNotWantMeToOfferToHelp = ["jessica", "the-grinch"];
+export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
 interface Analysis extends Details {
@@ -185,11 +185,11 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
                     .then(() => soFar.project.push())
                     .then(() => ({ ...soFar, pushed: true, offered: false } as Analysis))
                     .catch(error => ({ ...soFar, pushed: false, offered: false, error } as Analysis));
+            } else if (shouldOfferToHelp(soFar.author)) {
+                return offerToHelp(ctx, soFar as Analysis)
+                    .then(() => ({ ...soFar, pushed: false, offered: true } as Analysis));
             } else {
-                if (shouldOfferToHelp(soFar.author)) {
-                    return offerToHelp(ctx, soFar as Analysis)
-                        .then(() => ({ ...soFar, pushed: false, offered: true } as Analysis));
-                }
+                return { ...soFar, pushed: false, offered: false } as Analysis
             }
         } else {
             return Promise.resolve({ ...soFar, pushed: false, offered: false } as Analysis);
@@ -245,12 +245,12 @@ function sendNotification(project: Project, ctx: HandlerContext, details: Detail
         return problemsToAttachments(project, analysis, WhereToLink.fromDetails(details, analysis.commit.sha), analysis.problems)
             .then(attachments =>
                 ctx.messageClient.addressUsers({
-                    text:
-                    `Bad news: there are ${analysis.problems.length} tricky linting errors on ${
-                    linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha),
-                        "your commit")} to ${details.repo.name}#${details.branch}.`,
-                    attachments,
-                },
+                        text:
+                            `Bad news: there are ${analysis.problems.length} tricky linting errors on ${
+                                linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha),
+                                    "your commit")} to ${details.repo.name}#${details.branch}.`,
+                        attachments,
+                    },
                     analysis.author, identifyMessage(analysis)))
             .then(() => reportToMe("I told them to fix it themselves"));
     }
@@ -265,7 +265,7 @@ function offerToHelp(context: HandlerContext, analysis: Analysis): Promise<void>
 
     const slackMessage: slack.SlackMessage = {
         text: `There are linting errors on your ${
-        linkToCommit(WhereToLink.fromDetails(analysis, analysis.commit.sha))}. Would you like me to fix them for you?`,
+            linkToCommit(WhereToLink.fromDetails(analysis, analysis.commit.sha))}. Would you like me to fix them for you?`,
         attachments: [{
             fallback: "buttons", actions: [
                 buttonForCommand({ text: "Fix it" },
@@ -294,7 +294,7 @@ function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachme
         fallback: "analysis goes here",
         text: analysis.problems ? analysis.problems.map(formatProblem).join("\n") : "No problems",
         fields: fields(["author", "personWantsMyHelp", "specificallyRequested",
-            "lintable", "happy", "changed", "pushed"],
+                "lintable", "happy", "changed", "pushed"],
             ["status.raw", "error"], analysis),
         footer: ctx.correlationId,
     };
