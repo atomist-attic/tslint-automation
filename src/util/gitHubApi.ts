@@ -1,4 +1,4 @@
-import * as GitHubApi from "github";
+import * as GitHubApi from "@octokit/rest";
 import * as URL from "url";
 
 export function api(token: string, apiUrl: string = "https://api.github.com/"): GitHubApi {
