@@ -1,0 +1,76 @@
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: tslint-automation
+  namespace: default
+  labels:
+    app: tslint-automation
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: tslint-automation
+  template:
+    metadata:
+      labels:
+        app: tslint-automation
+        version: '0'
+      annotations:
+        atomist.com/repo-image: '[{"repo":{"owner":"atomist","name":"tslint-automation"},"image":"atomist/tslint-automation"}]'
+    spec:
+      containers:
+      - name: tslint-automation
+        image: atomist/tslint-automation:0.2.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ATOMIST_CONFIG_PATH
+          value: /opt/atm/client.config.json
+        ports:
+        - name: http
+          containerPort: 2866
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: "/health"
+            port: 2866
+            scheme: HTTP
+          initialDelaySeconds: 20
+          timeoutSeconds: 30
+          periodSeconds: 60
+          successThreshold: 1
+          failureThreshold: 7
+        readinessProbe:
+          httpGet:
+            path: "/health"
+            port: 2866
+            scheme: HTTP
+          initialDelaySeconds: 20
+          timeoutSeconds: 3
+          periodSeconds: 20
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          limits:
+            cpu: 1.0
+            memory: 1024Mi
+          requests:
+            cpu: 0.1
+            memory: 768Mi
+        volumeMounts:
+        - name: automation
+          mountPath: /opt/atm
+          readOnly: true
+      volumes:
+      - name: automation
+        secret:
+          secretName: automation
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 180
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1

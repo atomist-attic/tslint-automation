@@ -1,8 +1,0 @@
-set -e
-set -x
-
-new_version=$(npm version patch)
-npm run compile
-docker build . -t jessitron/linting-automation:${new_version}
-docker push jessitron/linting-automation:${new_version}
-kubectl set image deployment/tslint-automation tslint-automation=jessitron/linting-automation:${new_version}
