@@ -191,7 +191,7 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
                 return offerToHelp(ctx, soFar as Analysis)
                     .then(() => ({ ...soFar, pushed: false, offered: true } as Analysis));
             } else {
-                return { ...soFar, pushed: false, offered: false } as Analysis
+                return { ...soFar, pushed: false, offered: false } as Analysis;
             }
         } else {
             return Promise.resolve({ ...soFar, pushed: false, offered: false } as Analysis);
@@ -519,6 +519,6 @@ export function runTslint(project: GitProject) {
         return { success: status === 0 /* Status.Ok */, errorOutput: JSON.parse(logs.join("\n")) as RuleFailure[] };
     }, err => {
         logger.warn("Error running tslint! %s", err.message);
-        return { success: false, errorOutput: null }
+        return { success: false, errorOutput: null };
     });
 }
