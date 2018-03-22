@@ -145,11 +145,13 @@ function handleTsLint(ctx: HandlerContext, creds: ProjectOperationCredentials,
     const projectPromise: Promise<GitProject> = GitCommandGitProject.cloned(creds,
         new GitHubRepoRef(details.repo.owner, details.repo.name, details.branch));
     const isItLintable: Promise<Partial<Analysis>> = projectPromise.then(project => {
-        if (project.fileExistsSync("tslint.json")) {
-            return { ...startAnalysis, project, lintable: true };
-        } else {
-            return { ...startAnalysis, project, lintable: false };
-        }
+        return project.setUserConfig(author, `${author}@atomist.com`).then(() => {
+            if (project.fileExistsSync("tslint.json")) {
+                return { ...startAnalysis, project, lintable: true };
+            } else {
+                return { ...startAnalysis, project, lintable: false };
+            }
+        });
     });
     const populateTheSha: Promise<Partial<Analysis>> = isItLintable
         .then(analysis => analysis.project.gitStatus()
