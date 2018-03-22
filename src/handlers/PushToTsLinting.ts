@@ -27,7 +27,7 @@ import { InsertAboveLineParameters } from "./BittyEditors/InsertAboveLine";
 import { BranchInRepoParameters } from "./BranchInRepoParameters";
 import { RecognizedError, recognizeError } from "./recognizedErrors";
 
-export const PeopleWhoWantLintingOnTheirBranches = ["cd", "clay"];
+export const PeopleWhoWantLintingOnTheirBranches = ["clay"];
 export const PeopleWhoDoNotWantMeToOfferToHelp = ["the-grinch"];
 const CommitMessage = `Automatic de-linting\n[atomist:auto-delint]`;
 
