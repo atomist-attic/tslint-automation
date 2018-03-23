@@ -442,8 +442,8 @@ function overrideButton(details: Details, problem: Problem, offendingLine: strin
     parameters.lineFrom1 = problem.location.lineFrom1;
     parameters.path = problem.location.path;
     parameters.targets.branch = details.branch;
-    // I don't know whether this is necessary but I want it to work and I don't want to fiddle much
-    return buttonForCommand({ text: "Override" }, "InsertAboveLine",
+
+    return buttonForCommand({ text: "Override" , style: "danger" }, "InsertAboveLine",
         {
             "targets.owner": parameters.targets.owner,
             "targets.repo": parameters.targets.repo,

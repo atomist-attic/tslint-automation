@@ -8,6 +8,7 @@ export function recognizeError(tsError: RuleFailure): RecognizedError {
         TripleEqualsError.recognize(tsError) ||
         ConsoleLogError.recognize(tsError) ||
         ConstructorParentheses.recognize(tsError) ||
+        BanStringType.recognize(tsError) ||
         new RecognizedError(tsError);
 }
 
@@ -135,6 +136,38 @@ class TripleEqualsError extends RecognizedError {
                 actions: [replaceButton({
                     details, location, previousContent,
                     newContent: easyFix, message: "lint fix: triple equals",
+                })],
+            };
+        } else {
+            return super.fix(details, location, previousContent);
+        }
+    }
+}
+
+class BanStringType extends RecognizedError {
+    public static Name = "ban-types";
+
+    public static recognize(tsError: RuleFailure): TripleEqualsError | null {
+        if (tsError.ruleName === this.Name && tsError.failure.includes("String")) {
+            return new BanStringType(tsError);
+        }
+        return null;
+    }
+
+    constructor(tsError: RuleFailure) {
+        super(tsError,
+            { color: "#20a6a0" });
+    }
+
+    public fix(details: WhereToFix, location: Location, previousContent: string): FixInfo {
+        const easyFix = previousContent
+            .replace(/String/g, "string");
+        if (easyFix !== previousContent) {
+            return {
+                text: "Proposed fix: `" + easyFix.trim() + "`",
+                actions: [replaceButton({
+                    details, location, previousContent,
+                    newContent: easyFix, message: "lint fix: String type",
                 })],
             };
         } else {
