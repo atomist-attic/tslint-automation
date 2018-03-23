@@ -247,12 +247,12 @@ function sendNotification(project: Project, ctx: HandlerContext, details: Detail
         return problemsToAttachments(project, analysis, WhereToLink.fromDetails(details, analysis.commit.sha), analysis.problems)
             .then(attachments =>
                 ctx.messageClient.addressUsers({
-                        text:
-                            `Bad news: there are ${analysis.problems.length} tricky linting errors on ${
-                                linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha),
-                                    "your commit")} to ${details.repo.name}#${details.branch}.`,
-                        attachments,
-                    },
+                    text:
+                        `Bad news: there are ${analysis.problems.length} tricky linting errors on ${
+                        linkToCommit(WhereToLink.fromDetails(details, analysis.commit.sha),
+                            "your commit")} to ${details.repo.name}#${details.branch}.`,
+                    attachments,
+                },
                     analysis.author, identifyMessage(analysis)))
             .then(() => reportToMe("I told them to fix it themselves"));
     }
@@ -296,7 +296,7 @@ function formatAnalysis(ctx: HandlerContext, analysis: Analysis): slack.Attachme
         fallback: "analysis goes here",
         text: analysis.problems ? analysis.problems.map(formatProblem).join("\n") : "No problems",
         fields: fields(["author", "personWantsMyHelp", "specificallyRequested",
-                "lintable", "happy", "changed", "pushed"],
+            "lintable", "happy", "changed", "pushed"],
             ["status.raw", "error"], analysis),
         footer: ctx.correlationId,
     };
@@ -494,7 +494,8 @@ export function runTslint(project: GitProject) {
     // })).then();
 
     const options: Options = {
-        exclude: ["node_modules/**", "build/**"],
+        exclude: [project.baseDir + "/{.git,node_modules,build}}/**"],
+        files: [project.baseDir + "/**/*.ts"],
         fix: true,
         project: project.baseDir,
         format: "json",
