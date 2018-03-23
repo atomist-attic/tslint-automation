@@ -17,12 +17,11 @@ import {
 } from "@atomist/automation-client/server/AutomationEventListener";
 import { Destination, MessageOptions } from "@atomist/automation-client/spi/message/MessageClient";
 
+import * as _ from "lodash";
 import assign = require("lodash.assign");
 import { createLogger } from "logzio-nodejs";
 import * as serializeError from "serialize-error";
 import logzioWinstonTransport = require("winston-logzio");
-import * as _ from "lodash";
-
 
 export interface LogzioOptions {
     token: string;
