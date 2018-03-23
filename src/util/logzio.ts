@@ -21,6 +21,8 @@ import assign = require("lodash.assign");
 import { createLogger } from "logzio-nodejs";
 import * as serializeError from "serialize-error";
 import logzioWinstonTransport = require("winston-logzio");
+import * as _ from "lodash";
+
 
 export interface LogzioOptions {
     token: string;
@@ -222,7 +224,7 @@ export class LogzioAutomationEventListener extends AutomationEventListenerSuppor
  * Configure logzio logging if token exists in configuration.
  */
 export function configureLogzio(configuration: Configuration): Promise<Configuration> {
-    if (configuration.logging.custom.logzioToken) {
+    if (_.get(configuration, "logging.custom.logzioToken")) {
         const options: LogzioOptions = {
             token: configuration.logging.custom.logzioToken,
             name: configuration.name,
