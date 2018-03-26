@@ -18,7 +18,7 @@
     "tslint"
   ],
   "dependencies": {
-    "@atomist/automation-client": "https://r.atomist.com/B1NeXvRg9M",
+    "@atomist/automation-client": "^0.11.0",
     "@atomist/slack-messages": "^0.12.1",
     "@octokit/rest": "^15.2.5",
     "@types/winston": "^2.3.8",

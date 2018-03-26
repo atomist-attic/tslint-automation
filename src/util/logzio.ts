@@ -223,9 +223,9 @@ export class LogzioAutomationEventListener extends AutomationEventListenerSuppor
  * Configure logzio logging if token exists in configuration.
  */
 export function configureLogzio(configuration: Configuration): Promise<Configuration> {
-    if (_.get(configuration, "logging.custom.logzioToken")) {
+    if (_.get(configuration, "logging.custom.logzio.token")) {
         const options: LogzioOptions = {
-            token: configuration.logging.custom.logzioToken,
+            token: configuration.logging.custom.logzio.token,
             name: configuration.name,
             version: configuration.version,
             environment: configuration.environment,
