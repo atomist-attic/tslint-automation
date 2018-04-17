@@ -20,34 +20,34 @@
   "dependencies": {
     "@atomist/automation-client": "^0.11.2",
     "@atomist/slack-messages": "^0.12.1",
-    "@octokit/rest": "^15.2.5",
-    "@types/winston": "^2.3.8",
+    "@octokit/rest": "^15.2.6",
+    "@types/winston": "^2.3.9",
     "axios": "^0.18.0",
     "child-process-promise": "^2.2.1",
     "lodash.assign": "^4.2.0",
     "logzio-nodejs": "^0.4.10",
-    "nodemon": "^1.17.2",
+    "nodemon": "^1.17.3",
     "serialize-error": "^2.1.0",
     "tslint": "^5.9.1",
-    "typescript": "^2.7.1",
+    "typescript": "^2.8.1",
     "winston-logzio": "^1.0.6"
   },
   "devDependencies": {
     "@types/lodash.assign": "^4.2.3",
     "@types/mocha": "^2.2.48",
-    "@types/node": "^9.4.7",
-    "@types/power-assert": "^1.4.29",
+    "@types/node": "^9.6.5",
+    "@types/power-assert": "^1.5.0",
     "copyfiles": "^1.2.0",
     "espower-typescript": "^8.1.3",
     "graphql-code-generator": "^0.8.21",
-    "mocha": "^5.0.4",
+    "mocha": "^5.1.0",
     "npm-run-all": "^4.1.2",
-    "power-assert": "^1.4.4",
+    "power-assert": "^1.5.0",
     "rimraf": "^2.6.2",
     "supervisor": "^0.12.0",
     "ts-node": "^5.0.1",
     "typedoc": "^0.11.1",
-    "typescript-formatter": "^7.1.0"
+    "typescript-formatter": "^7.2.0"
   },
   "directories": {
     "test": "test"
