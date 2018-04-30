@@ -26,7 +26,7 @@ RUN  git config --global user.email "bot@atomist.com" && git config --global use
 
 RUN npm install -g npm@6.0.0
 
-COPY package.json package-lock.json .
+COPY package.json package-lock.json ./
 
 RUN npm ci --only=production
 
