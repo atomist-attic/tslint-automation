@@ -24,6 +24,10 @@ CMD ["node_modules/@atomist/automation-client/start.client.js"]
 
 RUN  git config --global user.email "bot@atomist.com" && git config --global user.name "Atomist Bot"
 
-COPY . .
+RUN npm install -g npm@6.0.0
 
-RUN npm install --only=production
+COPY package.json package-lock.json .
+
+RUN npm ci --only=production
+
+COPY . .
