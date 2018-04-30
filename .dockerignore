@@ -7,6 +7,7 @@
 .git*
 .npm*
 .travis.yml
+.atomist/
 node_modules/
 build/test/
 build/typedoc/
