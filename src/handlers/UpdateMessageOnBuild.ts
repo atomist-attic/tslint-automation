@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-import { EventFired, EventHandler, HandleEvent, HandlerContext, HandlerResult, Success } from "@atomist/automation-client";
-import { subscriptionFromFile } from "@atomist/automation-client/graph/graphQL";
+import {
+    EventFired,
+    EventHandler,
+    GraphQL,
+    HandleEvent,
+    HandlerContext,
+    HandlerResult,
+    Success,
+} from "@atomist/automation-client";
 import * as _ from "lodash";
 import * as graphql from "../typings/types";
 
 import { adminChannelId, adminSlackUserNames } from "../credentials";
 import * as stopBotheringMe from "./Configuration/SelfConfigurate";
 
-@EventHandler("Update some messages when a build status arrives",
-    subscriptionFromFile("graphql/subscription/anyBuild"))
+@EventHandler("Update some messages when a build status arrives", GraphQL.subscription("anyBuild"))
 export class UpdateMessageOnBuild implements HandleEvent<graphql.BuildFromPush.Subscription> {
 
     public handle(event: EventFired<graphql.BuildFromPush.Subscription>,

@@ -15,11 +15,20 @@
  */
 
 import {
-    CommandHandler, EventFired, failure, Failure, HandleCommand, HandleEvent, HandlerContext, HandlerResult,
-    logger, Secrets,
+    CommandHandler,
+    EventFired,
+    EventHandler,
+    failure,
+    Failure,
+    GraphQL,
+    HandleCommand,
+    HandleEvent,
+    HandlerContext,
+    HandlerResult,
+    logger,
+    Secret,
+    Secrets,
 } from "@atomist/automation-client";
-import { EventHandler, Secret } from "@atomist/automation-client/decorators";
-import * as GraphQL from "@atomist/automation-client/graph/graphQL";
 import { GitHubRepoRef } from "@atomist/automation-client/operations/common/GitHubRepoRef";
 import { ProjectOperationCredentials } from "@atomist/automation-client/operations/common/ProjectOperationCredentials";
 import { GitCommandGitProject } from "@atomist/automation-client/project/git/GitCommandGitProject";
@@ -84,8 +93,7 @@ export function shouldOfferToHelp(author: string): boolean {
     return true;
 }
 
-@EventHandler("Runs ts tslint --fix on a given repository",
-    GraphQL.subscriptionFromFile("graphql/subscription/pushToTsLinting"))
+@EventHandler("Runs ts tslint --fix on a given repository", GraphQL.subscription("pushToTsLinting"))
 export class PushToTsLinting implements HandleEvent<graphql.PushToTsLinting.Subscription> {
 
     @Secret(Secrets.OrgToken)
@@ -459,7 +467,7 @@ function overrideButton(details: Details, problem: Problem, offendingLine: strin
     parameters.path = problem.location.path;
     parameters.targets.branch = details.branch;
 
-    return buttonForCommand({ text: "Override" , style: "danger" }, "InsertAboveLine",
+    return buttonForCommand({ text: "Override", style: "danger" }, "InsertAboveLine",
         {
             "targets.owner": parameters.targets.owner,
             "targets.repo": parameters.targets.repo,
