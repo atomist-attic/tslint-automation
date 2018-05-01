@@ -28,7 +28,7 @@ import {
     Secrets,
     Success,
 } from "@atomist/automation-client";
-import { runningAutomationClient } from "@atomist/automation-client/automationClient";
+import { automationClientInstance } from "@atomist/automation-client/automationClient";
 import { Parameters } from "@atomist/automation-client/decorators";
 import { GitHubRepoRef } from "@atomist/automation-client/operations/common/GitHubRepoRef";
 import { EditResult, failedEdit, ProjectEditor, successfulEdit } from "@atomist/automation-client/operations/edit/projectEditor";
@@ -107,7 +107,7 @@ export class StopBotheringMe implements HandleCommand<StopBotheringMeParams> {
             .then(() => context.messageClient.respond(
                 "OK. I'll update my program and not offer again. If you change your mind, post in " + slack.channel(adminChannelId)))
             .then(() => {
-                const creds = { token: runningAutomationClient.configuration.token };
+                const creds = { token: automationClientInstance().configuration.token };
                 return GitCommandGitProject.cloned(creds, new GitHubRepoRef(MyGitHubOrganization, MyGitHubRepository));
             })
             .then(project => addPersonWhoDoesNotWantMeToOfferToHelp(parameters.screenName)(project, context)
@@ -147,7 +147,7 @@ export class DoOfferToHelp implements HandleCommand<StopBotheringMeParams> {
         // someday, parse reporef from package json
         await initialReport(context, parameters, me);
         await context.messageClient.respond("OK. I'll update my program and offer to help when I can.");
-        const creds = { token: runningAutomationClient.configuration.token };
+        const creds = { token: automationClientInstance().configuration.token };
         const project = await GitCommandGitProject.cloned(creds, new GitHubRepoRef(MyGitHubOrganization, MyGitHubRepository))
             .catch(reportError("Failed to clone"));
         const editResult = await removePersonWhoDoesNotWantMeToOfferToHelp(parameters.screenName)(project, context)
