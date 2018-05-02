@@ -6,7 +6,7 @@
           {
             "env": [
               {
-                "name": "ATOMIST_ENVIRONMENT",
+                "name": "ATOMIST_ENV",
                 "valueFrom": {
                   "fieldRef": {
                     "fieldPath": "metadata.namespace"
